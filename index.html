@@ -500,21 +500,43 @@ async function search() {
       .catch(()=>{})
       .then(()=>{ const q=kw.toLowerCase(); return csvData.filter(r=>r.nome&&r.nome.toLowerCase().includes(q)).slice(0,12); });
 
+// ── ML via proxy CORS — necessário quando rodando em domínio externo (Vercel) ──
+async function fetchMLItems(term) {
+  const mlUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(term)}&limit=25&sort=sold_quantity_desc`;
+  const proxies = [
+    mlUrl,  // tenta direto primeiro — funciona em alguns browsers
+    `https://corsproxy.io/?${encodeURIComponent(mlUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(mlUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(mlUrl)}`,
+  ];
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, {signal: AbortSignal.timeout(6000)});
+      if (!r.ok) continue;
+      const text = await r.text();
+      // allorigins retorna o JSON como string dentro de {contents:"..."}
+      let data;
+      try { data = JSON.parse(text); } catch { continue; }
+      // se veio embrulhado pelo proxy allorigins
+      if (data.contents) { try { data = JSON.parse(data.contents); } catch { continue; } }
+      if (!data.results) continue;
+      return data.results.map(p => ({
+        nome: p.title,
+        num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
+        numRaw: p.sold_quantity||0,
+        imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
+        link: p.permalink
+      }));
+    } catch { continue; }
+  }
+  return [];
+}
+
   const mlPromise = !activeSet.has('ml') ? Promise.resolve({items:[], term:kw}) :
     translate(kw)
       .catch(()=>kw)
-      .then(term => fetch(
-        `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(term)}&limit=25&sort=sold_quantity_desc`,
-        {signal:AbortSignal.timeout(6000)}
-      ).then(r=>r.ok?r.json():{results:[]})
-       .then(d=>({ term, items:(d.results||[]).map(p=>({
-          nome: p.title,
-          num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
-          numRaw: p.sold_quantity||0,
-          imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
-          link: p.permalink
-       }))}))
-      ).catch(()=>({items:[], term:kw}));
+      .then(term => fetchMLItems(term).then(items => ({ term, items })))
+      .catch(()=>({items:[], term:kw}));
 
   const ytPromise = !activeSet.has('yt') ? Promise.resolve([]) :
     fetchYT(kw).catch(()=>[]);
@@ -890,13 +912,10 @@ async function fetchRadarSignals(theme) {
   // ML real para o tema
   try {
     const kwPT = await Promise.race([translate(kw), new Promise(r=>setTimeout(()=>r(kw),3000))]);
-    const r = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(kwPT)}&limit=6&sort=sold_quantity_desc`,{signal:AbortSignal.timeout(5000)});
-    if(r.ok) {
-      const d = await r.json();
-      (d.results||[]).slice(0,3).filter(p=>p.sold_quantity>10).forEach(p=>{
-        signals.push({tipo:p.sold_quantity>100?'hot':'val', tema:kw, titulo:p.title, meta:`R$${Math.round(p.price).toLocaleString('pt-BR')}`, num:p.sold_quantity.toLocaleString('pt-BR'), unit:'vendidos · ML Brasil', badges:p.sold_quantity>100?['alta demanda','ML Brasil']:['validado','ML Brasil'], link:p.permalink});
+    const items = await Promise.race([fetchMLItems(kwPT), new Promise(r=>setTimeout(()=>r([]),6000))]);
+    items.slice(0,3).filter(p=>p.numRaw>10).forEach(p=>{
+        signals.push({tipo:p.numRaw>100?'hot':'val', tema:kw, titulo:p.nome, meta:`vendidos no ML`, num:p.num, unit:'vendidos · ML Brasil', badges:p.numRaw>100?['alta demanda','ML Brasil']:['validado','ML Brasil'], link:p.link});
       });
-    }
   } catch {}
   // YouTube real para o tema
   try {
