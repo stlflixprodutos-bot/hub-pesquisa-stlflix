@@ -391,51 +391,45 @@ async function search() {
   show('st-loading');
   document.getElementById('go-btn').disabled = true;
 
-  // STLFlix — carrega planilha se precisar, filtra pelo termo
-  let stlItems = [];
-  if (activeSet.has('stl')) {
-    try {
-      await Promise.race([loadSheets(), new Promise(r=>setTimeout(r,8000))]);
-      const q = kw.toLowerCase();
-      stlItems = csvData.filter(r => r.nome && r.nome.toLowerCase().includes(q)).slice(0,12);
-    } catch(e) { stlItems = []; }
-  }
+  // ── dispara STL, ML e YouTube em PARALELO ──
+  const stlPromise = !activeSet.has('stl') ? Promise.resolve([]) :
+    loadSheets()
+      .catch(()=>{})
+      .then(()=>{ const q=kw.toLowerCase(); return csvData.filter(r=>r.nome&&r.nome.toLowerCase().includes(q)).slice(0,12); });
 
-  // ML — traduz e busca
-  let mlItems = [], mlTerm = kw;
-  if (activeSet.has('ml')) {
-    try {
-      mlTerm = await Promise.race([translate(kw), new Promise(r=>setTimeout(()=>r(kw),3000))]);
-      const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(mlTerm)}&limit=25&sort=sold_quantity_desc`;
-      const r = await Promise.race([
-        fetch(url, {signal:AbortSignal.timeout(6000)}),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),7000))
-      ]);
-      if (r.ok) {
-        const d = await r.json();
-        mlItems = (d.results||[]).map(p=>({
+  const mlPromise = !activeSet.has('ml') ? Promise.resolve({items:[], term:kw}) :
+    translate(kw)
+      .catch(()=>kw)
+      .then(term => fetch(
+        `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(term)}&limit=25&sort=sold_quantity_desc`,
+        {signal:AbortSignal.timeout(6000)}
+      ).then(r=>r.ok?r.json():{results:[]})
+       .then(d=>({ term, items:(d.results||[]).map(p=>({
           nome: p.title,
           num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
           numRaw: p.sold_quantity||0,
           imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
           link: p.permalink
-        }));
-      }
-    } catch(e) { mlItems = []; }
-  }
+       }))}))
+      ).catch(()=>({items:[], term:kw}));
 
-  // YouTube
-  let ytItems = [];
-  if (activeSet.has('yt')) {
-    try {
-      ytItems = await Promise.race([fetchYT(kw), new Promise(r=>setTimeout(()=>r([]),9000))]);
-    } catch(e) { ytItems = []; }
-  }
+  const ytPromise = !activeSet.has('yt') ? Promise.resolve([]) :
+    fetchYT(kw).catch(()=>[]);
 
-  lastRes = { stl: stlItems, ml: mlItems, mlTerm, yt: ytItems };
+  // timeout geral de 10s — mostra o que chegou
+  const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
 
-  // debug no console — ajuda a identificar problemas
-  console.log('Resultados:', { stl: stlItems.length, ml: mlItems.length, mlTerm, yt: ytItems.length, csvTotal: csvData.length });
+  const [stlItems, mlResult, ytItems] = await Promise.all([
+    wrap(stlPromise, []),
+    wrap(mlPromise,  {items:[], term:kw}),
+    wrap(ytPromise,  []),
+  ]);
+
+  const mlItems = mlResult.items || [];
+  const mlTerm  = mlResult.term  || kw;
+
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems };
+  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
   show('st-results');
@@ -504,26 +498,51 @@ function renderGrid(id, items, tipo) {
 }
 
 function buildIntel(kw, stl, ml, yt, mlTerm) {
-  const parts = [];
+  const lines = [];
+  const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
+
+  // catalogo STLFlix
   if (stl.length) {
-    const top = stl[0];
-    parts.push(`<strong>${stl.length} produto${stl.length>1?'s':''}</strong> encontrado${stl.length>1?'s':''} no catálogo STLFlix — top: "${top.nome}" com <strong>${top.num} downloads</strong>.`);
+    const top = [...stl].sort((a,b)=>b.numRaw-a.numRaw)[0];
+    const total = stl.reduce((s,p)=>s+p.numRaw,0);
+    lines.push('<strong>' + stl.length + ' produto' + (stl.length>1?'s':'') + ' no catálogo STLFlix</strong> — top: <em>"' + top.nome + '"</em> com <strong>' + top.num + ' downloads</strong>. Total: <strong>' + total.toLocaleString('pt-BR') + ' downloads</strong>.');
   } else {
-    parts.push(`<strong>Nenhum produto</strong> encontrado no catálogo STLFlix para "${kw}" — possível gap de portfólio.`);
+    lines.push('<strong>Nenhum produto no catálogo STLFlix</strong> para "' + kw + '" — <strong style="color:var(--lime)">gap de portfólio confirmado.</strong>');
   }
+
+  // Mercado Livre
   if (ml.length) {
-    const top = ml.sort((a,b)=>b.numRaw-a.numRaw)[0];
-    const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
-    parts.push(`Mercado Livre${translated?` (buscado como "<strong>${mlTerm}</strong>")`:''}: <strong>${ml.length} resultados</strong>, top "${top.nome}" com <strong>${top.num}</strong>.`);
+    const top = [...ml].sort((a,b)=>b.numRaw-a.numRaw)[0];
+    const comVendas = ml.filter(p=>p.numRaw>0).length;
+    lines.push('Mercado Livre BR' + (translated ? ' <em>(buscado como <strong>' + mlTerm + '</strong>)</em>' : '') + ': <strong>' + ml.length + ' resultados</strong>' + (comVendas>0 ? ', ' + comVendas + ' com vendas confirmadas' : '') + ' — top: <em>"' + top.nome + '"</em> com <strong>' + top.num + '</strong>.');
+  } else if (activeSet.has('ml')) {
+    lines.push('Mercado Livre BR' + (translated ? ' (buscado como <strong>' + mlTerm + '</strong>)' : '') + ': <strong>sem resultados</strong> — baixa demanda no mercado brasileiro.');
   }
+
+  // YouTube
   if (yt.length) {
     const top = yt[0];
-    parts.push(`YouTube: <strong>${yt.length} vídeos</strong> encontrados — maior alcance: "${top.nome}" com <strong>${top.num} views</strong> (@${top.drop}).`);
+    const totalViews = yt.reduce((s,v)=>s+(v.numRaw||0),0);
+    const fmtV = n => n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n;
+    lines.push('YouTube: <strong>' + yt.length + ' vídeos</strong> — maior alcance: <em>"' + top.nome + '"</em> com <strong>' + top.num + ' views</strong>. Total: <strong>' + fmtV(totalViews) + ' views</strong>.');
   }
-  if (!stl.length && ml.length) parts.push(`<strong>Oportunidade:</strong> produto com demanda confirmada no ML mas ausente no catálogo STLFlix.`);
-  return parts.join('<br>');
-}
 
+  // confluencia
+  const fontes = [stl.length>0, ml.length>0, yt.length>0].filter(Boolean).length;
+  if (fontes >= 2) {
+    lines.push('<strong style="color:var(--lime)">Confluência em ' + fontes + '/3 fontes</strong> — sinal forte de demanda real para "' + kw + '".');
+  }
+
+  // oportunidades
+  const opps = [];
+  if (!stl.length && ml.length>0)  opps.push('produto com demanda no ML mas <strong>ausente no catálogo STLFlix</strong> — gap confirmado');
+  if (!stl.length && yt.length>0)  opps.push('conteúdo viral no YouTube sem produto STLFlix equivalente');
+  if (stl.length>0 && ml.length===0) opps.push('produto no catálogo sem presença no ML — validar demanda BR');
+  if (ml.length>5 && !stl.length)  opps.push(ml.length + ' resultados no ML sugerem volume para um drop');
+  if (opps.length) lines.push('<strong>Oportunidades:</strong> ' + opps.join(' · ') + '.');
+
+  return lines.map(l=>'<div style="padding:4px 0;border-bottom:0.5px solid var(--lime-bg2);">' + l + '</div>').join('');
+}
 // ── EXPORT ──
 function copyMiro() {
   const {stl,ml,mlTerm,yt} = lastRes;
