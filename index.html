@@ -499,11 +499,11 @@ async function search() {
 // ── ML via proxy CORS — necessário quando rodando em domínio externo (Vercel) ──
 async function fetchMLItems(term) {
   try {
-    // usa a função serverless da própria Vercel — sem CORS, sem proxy externo
     const r = await fetch(`/api/ml?q=${encodeURIComponent(term)}`, {signal: AbortSignal.timeout(8000)});
-    if (!r.ok) throw new Error(`${r.status}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
-    if (!data.results) throw new Error('no results');
+    console.log('ML resposta:', JSON.stringify(data).substring(0, 300));
+    if (!data.results) throw new Error('no results — keys: ' + Object.keys(data).join(', '));
     return data.results.map(p => ({
       nome: p.title,
       num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
