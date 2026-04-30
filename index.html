@@ -477,25 +477,6 @@ function renderAll(kw) {
     : 'sem resultados';
 }
 
-  // intel
-  document.getElementById('intel-kw').textContent = `"${kw}" · ${[stl.length, (ml.items||ml).length, yt.length].reduce((a,b)=>a+b,0)} resultados`;
-  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml.items||ml, yt, mlTerm);
-
-  // grids
-  renderGrid('grid-stl', stl, 'stl');
-  document.getElementById('meta-stl').textContent = stl.length ? `${stl.length} no catálogo` : 'sem resultados';
-
-  const mlItems = Array.isArray(ml) ? ml : (ml.items||[]);
-  renderGrid('grid-ml', mlItems, 'ml');
-  const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
-  document.getElementById('meta-ml').textContent = mlItems.length
-    ? `${mlItems.length} resultados${translated ? ` · buscado como "${mlTerm}"` : ''}`
-    : 'sem resultados';
-
-  renderGrid('grid-yt', yt, 'yt');
-  document.getElementById('meta-yt').textContent = yt.length ? `${yt.length} vídeos por views` : 'sem resultados';
-}
-
 function renderGrid(id, items, tipo) {
   const grid = document.getElementById(id);
   if (!items.length) { grid.innerHTML = `<div class="no-results">Sem resultados</div>`; return; }
