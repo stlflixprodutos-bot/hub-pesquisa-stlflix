@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub de Pesquisa · STLFlix</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090909;--s:#111;--s2:#161616;--b:#1e1e1e;--b2:#2a2a2a;
+  --t:#e0e0d8;--m:#444;--m2:#777;--m3:#aaa;
+  --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
+  --red:#ff4444;--green:#3ddc84;--blue:#4a9eff;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
+}
+body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
+
+.topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--lime);letter-spacing:.1em;}
+.logo em{color:var(--m2);font-weight:400;}
+
+.search-wrap{padding:20px 24px 16px;background:var(--s);border-bottom:1px solid var(--b);}
+.search-row{display:flex;gap:10px;margin-bottom:12px;}
+.search-field{flex:1;display:flex;background:var(--s2);border:1px solid var(--b2);border-radius:8px;overflow:hidden;transition:border-color .15s;}
+.search-field:focus-within{border-color:var(--lime-d);}
+.search-input{flex:1;background:transparent;border:none;outline:none;color:var(--t);font-family:var(--sans);font-size:15px;padding:10px 16px;}
+.search-input::placeholder{color:var(--m);}
+.search-go{background:var(--lime);border:none;color:#080808;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;padding:0 22px;cursor:pointer;}
+.search-go:hover{opacity:.85;}
+.search-go:disabled{background:var(--lime-bg2);color:var(--lime-d);cursor:not-allowed;}
+
+.chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.chip-label{font-family:var(--mono);font-size:8px;color:var(--m);letter-spacing:.1em;margin-right:4px;}
+.chip{font-family:var(--mono);font-size:9px;font-weight:700;padding:4px 12px;border-radius:20px;border:0.5px solid;cursor:pointer;user-select:none;transition:opacity .15s;}
+.chip.off{opacity:.25;filter:grayscale(1);}
+.c-stl{background:var(--lime-bg2);color:var(--lime);border-color:var(--lime-d);}
+.c-ml{background:#0a1600;color:#bde55a;border-color:#2a3d00;}
+.c-yt{background:#1a0000;color:var(--red);border-color:#3d0000;}
+
+.layout{display:flex;min-height:calc(100vh - 120px);}
+.sidebar{width:180px;flex-shrink:0;background:var(--s);border-right:1px solid var(--b);padding:14px 0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;}
+.sb-sec{padding:10px 14px 4px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;color:var(--m);text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;border-left:2px solid transparent;}
+.sb-item:hover{background:var(--s2);}
+.sb-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.sb-label{font-size:11px;color:var(--m2);}
+.sb-count{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--m);background:var(--s2);padding:1px 6px;border-radius:3px;}
+.sb-item.recent{cursor:pointer;}
+.sb-item.recent:hover .sb-label{color:var(--t);}
+
+.main{flex:1;min-width:0;padding:20px 24px;}
+
+/* estados */
+.state{display:none;}.state.on{display:block;}
+.empty-wrap{text-align:center;padding:60px 20px;}
+.empty-wrap svg{opacity:.15;margin-bottom:16px;}
+.empty-title{font-size:14px;font-weight:500;color:var(--m3);margin-bottom:6px;}
+.empty-sub{font-size:12px;color:var(--m2);line-height:1.6;}
+
+.loading-wrap{padding:40px 20px;text-align:center;}
+.dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--lime-d);animation:pulse 1.2s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+.loading-txt{font-family:var(--mono);font-size:10px;color:var(--m2);letter-spacing:.08em;}
+
+/* resultados */
+.intel{background:var(--lime-bg);border:0.5px solid var(--lime-d);border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+.intel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.intel-badge{font-family:var(--mono);font-size:8px;font-weight:700;background:var(--lime);color:#080808;padding:2px 8px;border-radius:3px;}
+.intel-kw{font-size:11px;color:var(--lime-d);}
+.intel-body{font-size:11px;color:#8aaa30;line-height:1.65;}
+.intel-body strong{color:var(--lime);}
+
+.src-section{margin-bottom:20px;}
+.src-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.src-tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 10px;border-radius:3px;text-transform:uppercase;flex-shrink:0;}
+.t-stl{background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);}
+.t-ml{background:#0a1600;color:#bde55a;border:0.5px solid #2a3d00;}
+.t-yt{background:#1a0000;color:var(--red);border:0.5px solid #3d0000;}
+.src-meta{font-size:10px;color:var(--m2);}
+.src-line{flex:1;height:.5px;background:var(--b);}
+
+/* grid normal para STL */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+/* scroll horizontal para ML e YT */
+.prod-grid.scroll{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;}
+.prod-grid.scroll::-webkit-scrollbar{height:4px;}
+.prod-grid.scroll::-webkit-scrollbar-track{background:var(--s2);}
+.prod-grid.scroll::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.prod-grid.scroll .prod-card{flex:0 0 140px;min-width:140px;}
+
+.prod-card{background:var(--s);border:0.5px solid var(--b2);border-radius:8px;overflow:hidden;transition:border-color .15s;}
+.prod-card:hover{border-color:var(--b2);}
+.prod-card.top{border-color:var(--lime);}
+.prod-img{aspect-ratio:1;background:#080808;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;}
+.prod-img img{width:100%;height:100%;object-fit:cover;}
+.prod-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#2a2a2a;text-align:center;padding:8px;line-height:1.3;}
+.prod-badge{position:absolute;top:4px;left:4px;font-family:var(--mono);font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--lime);color:#080808;}
+.prod-foot{padding:6px 8px 8px;border-top:0.5px solid var(--b);}
+.prod-name{font-size:9px;color:var(--m2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.prod-num{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--t);line-height:1;}
+.prod-card.top .prod-num{color:var(--lime);}
+.prod-sub{font-size:7px;color:var(--m);letter-spacing:.04em;margin-top:1px;}
+.prod-drop{font-size:8px;color:var(--lime-d);margin-top:1px;}
+.prod-link{font-size:8px;color:var(--blue);display:block;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;}
+.prod-link:hover{text-decoration:underline;}
+
+.no-results{padding:14px;font-size:11px;color:var(--m);text-align:center;}
+
+/* export bar */
+.export-bar{display:flex;gap:8px;padding:14px 0;border-top:0.5px solid var(--b);margin-top:8px;flex-wrap:wrap;}
+.btn{font-family:var(--sans);font-size:11px;padding:6px 14px;border-radius:6px;cursor:pointer;border:0.5px solid var(--b2);background:transparent;color:var(--m2);transition:all .15s;}
+.btn:hover{border-color:#444;color:var(--t);}
+.btn.primary{background:var(--lime-bg2);border-color:var(--lime-d);color:var(--lime);}
+.btn.primary:hover{background:var(--lime-bg);}
+
+/* toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--lime);color:#080808;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;padding:10px 18px;border-radius:6px;transform:translateY(60px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;}
+.toast.on{transform:translateY(0);opacity:1;}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:var(--s);border:0.5px solid var(--b2);border-radius:12px;width:500px;max-width:95vw;padding:24px;}
+.modal-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--lime);text-transform:uppercase;margin-bottom:16px;}
+.mf{margin-bottom:12px;}
+.ml{font-size:10px;color:var(--m2);font-family:var(--mono);letter-spacing:.06em;display:block;margin-bottom:5px;}
+.mi{width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:12px;padding:8px 12px;outline:none;transition:border-color .15s;}
+.mi:focus{border-color:var(--lime-d);}
+textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:10px;}
+.ma{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.mb{font-family:var(--sans);font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;border:0.5px solid var(--b2);background:transparent;color:var(--m2);}
+.mb.ok{background:var(--lime-bg2);border-color:var(--lime-d);color:var(--lime);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Hub de Pesquisa <em>/ STLFlix</em></div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="openCSV()">Importar CSV</button>
+    <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="downloadTemplate()">Template CSV</button>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <div class="search-row">
+    <div class="search-field">
+      <input class="search-input" id="kw" placeholder="ex: dice tower, cable organizer, plant pot, flexi dragon..." onkeydown="if(event.key==='Enter')search()">
+      <button class="search-go" id="go-btn" onclick="search()">BUSCAR</button>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip-label">FONTES</span>
+    <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
+    <div class="chip c-ml"  data-src="ml"  onclick="toggleChip(this)">Mercado Livre BR</div>
+    <div class="chip c-yt"  data-src="yt"  onclick="toggleChip(this)">YouTube</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-sec">Buscas recentes</div>
+    <div id="recent-list"></div>
+    <div class="sb-sec" style="margin-top:8px;">Contagem</div>
+    <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#bde55a"></div><span class="sb-label">Mercado Livre</span><span class="sb-count" id="cnt-ml">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:var(--red)"></div><span class="sb-label">YouTube</span><span class="sb-count" id="cnt-yt">—</span></div>
+  </div>
+
+  <div class="main">
+
+    <!-- EMPTY -->
+    <div class="state on" id="st-empty">
+      <div class="empty-wrap">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="21" cy="21" r="14" stroke="#555" stroke-width="2"/><path d="M32 32L42 42" stroke="#555" stroke-width="2" stroke-linecap="round"/><path d="M16 21h10M21 16v10" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
+        <div class="empty-title">Digite uma palavra-chave para começar</div>
+        <div class="empty-sub">Busca simultânea em STLFlix, Mercado Livre e YouTube<br>com tradução automática para o ML</div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="state" id="st-loading">
+      <div class="loading-wrap">
+        <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="loading-txt" id="load-txt">BUSCANDO...</div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="state" id="st-results">
+
+      <!-- Intel -->
+      <div class="intel" id="intel-block">
+        <div class="intel-head">
+          <span class="intel-badge">INTEL</span>
+          <span class="intel-kw" id="intel-kw">—</span>
+        </div>
+        <div class="intel-body" id="intel-body">—</div>
+      </div>
+
+      <!-- STLFlix -->
+      <div class="src-section">
+        <div class="src-head">
+          <span class="src-tag t-stl">STLFlix</span>
+          <span class="src-meta" id="meta-stl">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid" id="grid-stl"></div>
+      </div>
+
+      <!-- ML -->
+      <div class="src-section">
+        <div class="src-head">
+          <span class="src-tag t-ml">Mercado Livre BR</span>
+          <span class="src-meta" id="meta-ml">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid scroll" id="grid-ml"></div>
+      </div>
+
+      <!-- YouTube -->
+      <div class="src-section">
+        <div class="src-head">
+          <span class="src-tag t-yt">YouTube</span>
+          <span class="src-meta" id="meta-yt">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid scroll" id="grid-yt"></div>
+      </div>
+
+      <div class="export-bar">
+        <button class="btn primary" onclick="copyMiro()">Copiar p/ Miro</button>
+        <button class="btn" onclick="copyBriefing()">Gerar briefing</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal CSV -->
+<div class="modal-bg" id="modal-csv">
+  <div class="modal">
+    <div class="modal-title">Importar planilha STLFlix</div>
+    <div class="mf">
+      <label class="ml">Arquivo CSV</label>
+      <input type="file" accept=".csv" onchange="loadFile(this)" style="color:var(--m2);font-size:11px;display:block;margin-bottom:8px;">
+    </div>
+    <div class="mf">
+      <label class="ml">Ou cole o conteúdo CSV aqui</label>
+      <textarea class="mi" id="csv-txt" placeholder="mes,product_id,drop_name,product_name,total_downloads&#10;2026-01-01,3614,DROP #292,Hoodie - Can Holder,1571"></textarea>
+    </div>
+    <div style="font-size:10px;color:var(--m);line-height:1.6;">Colunas esperadas: <code style="font-family:var(--mono);background:var(--s2);padding:1px 5px;border-radius:3px;font-size:9px;">mes, product_id, drop_name, product_name, total_downloads</code></div>
+    <div class="ma">
+      <button class="mb" onclick="closeModal()">Cancelar</button>
+      <button class="mb ok" onclick="importCSV()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZglpk8yO0E7kZvSNCXB33rSAIUJkGIAKc41D9GdeNWNJYwWg9aTSrwsw4I7lTQPmOHCbwJzD6d1-X/pub?output=csv';
+const YT_KEY    = 'AIzaSyBovJAFLOfyKJPpAMdWJWDhkZOFG2Ck78E';
+const PROXY     = url => `https://corsproxy.io/?${encodeURIComponent(url)}`;
+const IMG_PROXY = url => url ? `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=300&h=300&fit=cover` : '';
+
+// ── STATE ──
+let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
+let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
+let lastKw    = '';
+let lastRes   = {};
+let activeSet = new Set(['stl','ml','yt']);
+
+// ── TRADUÇÃO ──
+const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
+
+const tCache = JSON.parse(localStorage.getItem('stlflix_tr') || '{}');
+
+async function translate(kw) {
+  const k = kw.toLowerCase().trim();
+  if (tCache[k]) return tCache[k];
+  // dicionário exato
+  if (DICT[k]) { tCache[k]=DICT[k]; save('stlflix_tr',tCache); return DICT[k]; }
+  // parcial
+  for (const [en,pt] of Object.entries(DICT)) {
+    if (k.includes(en)) { const t=k.replace(en,pt); tCache[k]=t; save('stlflix_tr',tCache); return t; }
+  }
+  // já é pt
+  if (/\b(suporte|organizador|porta|caixa|gancho|vaso|planta|gato|cachorro|dado|torre|brinquedo|caneta|fone|celular|prateleira|luminária)\b/i.test(kw)) return kw;
+  // google translate grátis
+  try {
+    const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(kw)}`,{signal:AbortSignal.timeout(3000)});
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    const t = d?.[0]?.[0]?.[0] || kw;
+    tCache[k]=t; save('stlflix_tr',tCache); return t;
+  } catch { return kw; }
+}
+
+// ── CSV PARSE ──
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if (lines.length < 2) return [];
+  const norm = s => s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  const header = splitLine(lines[0]).map(norm);
+  const idx = (...aliases) => { for(const a of aliases){ const i=header.indexOf(norm(a)); if(i>=0)return i; } return -1; };
+  const iName = idx('product_name','nome','name','title','produto');
+  const iDl   = idx('total_downloads','downloads','download','dl');
+  const iDrop = idx('drop_name','drop','colecao','collection');
+  const iDate = idx('mes','data','date');
+  const iId   = idx('product_id','id');
+  return lines.slice(1).map(line => {
+    const cols = splitLine(line);
+    const g = i => i>=0 ? cols[i]?.replace(/^"|"$/g,'').trim()||'' : '';
+    const name = g(iName); if(!name) return null;
+    const dl = parseInt(g(iDl).replace(/\./g,'').replace(',','.')) || 0;
+    const id = g(iId);
+    return { nome:name, num:dl?dl.toLocaleString('pt-BR'):'—', numRaw:dl, data:g(iDate), drop:g(iDrop), link:`https://platform.stlflix.com/pt-BR/explore?search=${encodeURIComponent(name)}`, tipo:'stl' };
+  }).filter(Boolean);
+}
+function splitLine(line) {
+  const cols=[]; let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){cols.push(cur);cur='';}
+    else cur+=c;
+  }
+  cols.push(cur); return cols;
+}
+
+// ── LOAD SHEETS ──
+async function loadSheets() {
+  if (csvData.length && Date.now()-csvTs < 10*60*1000) return; // cache válido por 10min
+  const proxies = [
+    `https://corsproxy.io/?${encodeURIComponent(SHEETS_URL)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEETS_URL)}`,
+    SHEETS_URL
+  ];
+  const tryOne = async url => {
+    const r = await fetch(url, {signal:AbortSignal.timeout(5000)});
+    if(!r.ok) throw 0;
+    const t = await r.text();
+    if(!t.includes(',')) throw 0;
+    return parseCSV(t);
+  };
+  try {
+    const rows = await Promise.any(proxies.map(tryOne));
+    csvData = rows;
+    csvTs = Date.now();
+    save('stlflix_csv', csvData);
+    save('stlflix_csv_ts', csvTs);
+  } catch { /* usa cache existente */ }
+}
+
+// ── FETCH ML ──
+
+// ── FETCH YOUTUBE ──
+async function fetchYT(kw) {
+  const q = encodeURIComponent(`${kw} 3d print`);
+  const r = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&order=viewCount&maxResults=12&key=${YT_KEY}`,{signal:AbortSignal.timeout(7000)});
+  if(!r.ok) return [];
+  const d = await r.json();
+  if(!d.items?.length) return [];
+  // stats em paralelo, sem bloquear se falhar
+  let sm = {};
+  try {
+    const ids = d.items.map(v=>v.id.videoId).join(',');
+    const sr = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_KEY}`,{signal:AbortSignal.timeout(5000)});
+    if(sr.ok){ const sd=await sr.json(); (sd.items||[]).forEach(v=>sm[v.id]=v.statistics); }
+  } catch {}
+  const fmt = n => n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`;
+  return d.items.map(v=>{
+    const views = parseInt(sm[v.id.videoId]?.viewCount||0);
+    return { nome:v.snippet.title, num:fmt(views), numRaw:views, imagem_url:v.snippet.thumbnails?.medium?.url||'', link:`https://youtube.com/watch?v=${v.id.videoId}`, drop:v.snippet.channelTitle, tipo:'yt' };
+  }).sort((a,b)=>b.numRaw-a.numRaw);
+}
+
+// ── SEARCH (ponto central) ──
+async function search() {
+  const kw = document.getElementById('kw').value.trim();
+  if (!kw) return;
+  lastKw = kw;
+  addRecent(kw);
+  show('st-loading');
+  document.getElementById('go-btn').disabled = true;
+
+  // STLFlix — carrega planilha se precisar, filtra pelo termo
+  let stlItems = [];
+  if (activeSet.has('stl')) {
+    try {
+      await Promise.race([loadSheets(), new Promise(r=>setTimeout(r,8000))]);
+      const q = kw.toLowerCase();
+      stlItems = csvData.filter(r => r.nome && r.nome.toLowerCase().includes(q)).slice(0,12);
+    } catch(e) { stlItems = []; }
+  }
+
+  // ML — traduz e busca
+  let mlItems = [], mlTerm = kw;
+  if (activeSet.has('ml')) {
+    try {
+      mlTerm = await Promise.race([translate(kw), new Promise(r=>setTimeout(()=>r(kw),3000))]);
+      const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(mlTerm)}&limit=25&sort=sold_quantity_desc`;
+      const r = await Promise.race([
+        fetch(url, {signal:AbortSignal.timeout(6000)}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),7000))
+      ]);
+      if (r.ok) {
+        const d = await r.json();
+        mlItems = (d.results||[]).map(p=>({
+          nome: p.title,
+          num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
+          numRaw: p.sold_quantity||0,
+          imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
+          link: p.permalink
+        }));
+      }
+    } catch(e) { mlItems = []; }
+  }
+
+  // YouTube
+  let ytItems = [];
+  if (activeSet.has('yt')) {
+    try {
+      ytItems = await Promise.race([fetchYT(kw), new Promise(r=>setTimeout(()=>r([]),9000))]);
+    } catch(e) { ytItems = []; }
+  }
+
+  lastRes = { stl: stlItems, ml: mlItems, mlTerm, yt: ytItems };
+
+  // debug no console — ajuda a identificar problemas
+  console.log('Resultados:', { stl: stlItems.length, ml: mlItems.length, mlTerm, yt: ytItems.length, csvTotal: csvData.length });
+
+  renderAll(kw);
+  show('st-results');
+  document.getElementById('go-btn').disabled = false;
+}
+
+// ── RENDER ──
+function renderAll(kw) {
+  const { stl, ml, mlTerm, yt } = lastRes;
+
+  // sidebar
+  document.getElementById('cnt-stl').textContent = stl.length;
+  document.getElementById('cnt-ml').textContent  = ml.length;
+  document.getElementById('cnt-yt').textContent  = yt.length;
+
+  // intel
+  document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
+  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, yt, mlTerm);
+
+  // STLFlix
+  renderGrid('grid-stl', stl, 'stl');
+  if (!stl.length && csvData.length === 0) {
+    document.getElementById('meta-stl').textContent = 'planilha não carregada — importe o CSV';
+  } else {
+    document.getElementById('meta-stl').textContent = stl.length ? `${stl.length} no catálogo · ${csvData.length} total` : `sem resultados (${csvData.length} produtos no catálogo)`;
+  }
+
+  // ML
+  renderGrid('grid-ml', ml, 'ml');
+  const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
+  document.getElementById('meta-ml').textContent = ml.length
+    ? `${ml.length} resultados${translated ? ` · buscado como "${mlTerm}"` : ''}`
+    : 'sem resultados';
+
+  // YouTube
+  renderGrid('grid-yt', yt, 'yt');
+  document.getElementById('meta-yt').textContent = yt.length
+    ? `${yt.length} vídeos por views`
+    : 'sem resultados';
+}
+
+  // intel
+  document.getElementById('intel-kw').textContent = `"${kw}" · ${[stl.length, (ml.items||ml).length, yt.length].reduce((a,b)=>a+b,0)} resultados`;
+  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml.items||ml, yt, mlTerm);
+
+  // grids
+  renderGrid('grid-stl', stl, 'stl');
+  document.getElementById('meta-stl').textContent = stl.length ? `${stl.length} no catálogo` : 'sem resultados';
+
+  const mlItems = Array.isArray(ml) ? ml : (ml.items||[]);
+  renderGrid('grid-ml', mlItems, 'ml');
+  const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
+  document.getElementById('meta-ml').textContent = mlItems.length
+    ? `${mlItems.length} resultados${translated ? ` · buscado como "${mlTerm}"` : ''}`
+    : 'sem resultados';
+
+  renderGrid('grid-yt', yt, 'yt');
+  document.getElementById('meta-yt').textContent = yt.length ? `${yt.length} vídeos por views` : 'sem resultados';
+}
+
+function renderGrid(id, items, tipo) {
+  const grid = document.getElementById(id);
+  if (!items.length) { grid.innerHTML = `<div class="no-results">Sem resultados</div>`; return; }
+  grid.innerHTML = items.map((p,i) => {
+    const imgEl = p.imagem_url
+      ? `<img src="${p.imagem_url}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="prod-img-ph" style="display:none;">${p.nome}</div>`
+      : `<div class="prod-img-ph">${p.nome}</div>`;
+    const badge = i===0 ? `<span class="prod-badge">1º</span>` : '';
+    const sub = tipo==='stl'
+      ? `<div class="prod-drop">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">platform.stlflix.com →</a>`
+      : tipo==='ml'
+      ? `<div class="prod-sub">Mercado Livre BR</div><a class="prod-link" href="${p.link}" target="_blank">mercadolivre.com.br →</a>`
+      : `<div class="prod-sub">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">youtube.com →</a>`;
+    return `<div class="prod-card ${i===0?'top':''}">
+      <div class="prod-img">${imgEl}${badge}</div>
+      <div class="prod-foot">
+        <div class="prod-name" title="${p.nome}">${p.nome}</div>
+        <div class="prod-num">${p.num||'—'}</div>
+        <div class="prod-sub">${tipo==='stl'?'downloads':tipo==='ml'?'vendas':'views'}</div>
+        ${p.data?`<div class="prod-sub">${p.data}</div>`:''}
+        ${sub}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildIntel(kw, stl, ml, yt, mlTerm) {
+  const parts = [];
+  if (stl.length) {
+    const top = stl[0];
+    parts.push(`<strong>${stl.length} produto${stl.length>1?'s':''}</strong> encontrado${stl.length>1?'s':''} no catálogo STLFlix — top: "${top.nome}" com <strong>${top.num} downloads</strong>.`);
+  } else {
+    parts.push(`<strong>Nenhum produto</strong> encontrado no catálogo STLFlix para "${kw}" — possível gap de portfólio.`);
+  }
+  if (ml.length) {
+    const top = ml.sort((a,b)=>b.numRaw-a.numRaw)[0];
+    const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
+    parts.push(`Mercado Livre${translated?` (buscado como "<strong>${mlTerm}</strong>")`:''}: <strong>${ml.length} resultados</strong>, top "${top.nome}" com <strong>${top.num}</strong>.`);
+  }
+  if (yt.length) {
+    const top = yt[0];
+    parts.push(`YouTube: <strong>${yt.length} vídeos</strong> encontrados — maior alcance: "${top.nome}" com <strong>${top.num} views</strong> (@${top.drop}).`);
+  }
+  if (!stl.length && ml.length) parts.push(`<strong>Oportunidade:</strong> produto com demanda confirmada no ML mas ausente no catálogo STLFlix.`);
+  return parts.join('<br>');
+}
+
+// ── EXPORT ──
+function copyMiro() {
+  const {stl,ml,mlTerm,yt} = lastRes;
+  const mlItems = Array.isArray(ml)?ml:(ml.items||[]);
+  let t = `HUB DE PESQUISA STLFLIX — "${lastKw}"\n\n`;
+  if(stl.length){ t+=`STLFLIX\n`; stl.forEach((p,i)=>t+=`${i+1}. ${p.nome} — ${p.num} downloads · ${p.drop}\n`); t+='\n'; }
+  if(mlItems.length){ t+=`MERCADO LIVRE BR${mlTerm&&mlTerm.toLowerCase()!==lastKw.toLowerCase()?` (buscado: "${mlTerm}")`:''}:\n`; mlItems.slice(0,10).forEach((p,i)=>t+=`${i+1}. ${p.nome} — ${p.num}\n`); t+='\n'; }
+  if(yt.length){ t+=`YOUTUBE:\n`; yt.slice(0,8).forEach((p,i)=>t+=`${i+1}. ${p.nome} — ${p.num} views (@${p.drop})\n`); }
+  navigator.clipboard.writeText(t).then(()=>toast('Copiado para área de transferência!'));
+}
+function copyBriefing() {
+  const {stl,ml,yt} = lastRes;
+  const mlItems = Array.isArray(ml)?ml:(ml.items||[]);
+  const gap = !stl.length && mlItems.length > 0;
+  let t = `BRIEFING — "${lastKw}"\nData: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
+  t += gap ? `STATUS: GAP — produto ausente no catálogo STLFlix\n\n` : `STATUS: Produto existe no catálogo (${stl.length} itens)\n\n`;
+  if(mlItems.length) t += `MERCADO LIVRE: ${mlItems[0]?.num} · "${mlItems[0]?.nome}"\n`;
+  if(yt.length) t += `YOUTUBE: ${yt[0]?.num} views · "${yt[0]?.nome}"\n`;
+  navigator.clipboard.writeText(t).then(()=>toast('Briefing copiado!'));
+}
+
+// ── CSV ──
+function openCSV(){ document.getElementById('modal-csv').classList.add('on'); }
+function closeModal(){ document.getElementById('modal-csv').classList.remove('on'); }
+function loadFile(input) {
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{ document.getElementById('csv-txt').value=e.target.result; };
+  r.readAsText(f,'UTF-8');
+}
+function importCSV() {
+  const raw = document.getElementById('csv-txt').value.trim();
+  if(!raw) return;
+  csvData = parseCSV(raw);
+  csvTs = Date.now();
+  save('stlflix_csv', csvData);
+  save('stlflix_csv_ts', csvTs);
+  closeModal();
+  toast(`${csvData.length} produtos importados!`);
+}
+function downloadTemplate() {
+  const csv = `mes,product_id,drop_name,product_name,total_downloads\n2026-01-01,3614,DROP #292,Hoodie - Can Holder,1571\n2026-01-01,3707,Drop #300,Inkcantation - Pen & Sticky Notes Holder,1132`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='stlflix-template.csv'; a.click();
+}
+
+// ── CHIPS ──
+function toggleChip(el) {
+  const s=el.dataset.src;
+  if(activeSet.has(s)){activeSet.delete(s);el.classList.add('off');}
+  else{activeSet.add(s);el.classList.remove('off');}
+}
+
+// ── RECENTES ──
+function addRecent(kw) {
+  const list=document.getElementById('recent-list');
+  if(list.querySelector(`[data-kw="${kw}"]`)) return;
+  const el=document.createElement('div');
+  el.className='sb-item recent'; el.dataset.kw=kw;
+  el.innerHTML=`<div class="sb-dot" style="background:var(--m)"></div><span class="sb-label">${kw}</span>`;
+  el.onclick=()=>{ document.getElementById('kw').value=kw; search(); };
+  list.insertBefore(el,list.firstChild);
+  if(list.children.length>6) list.removeChild(list.lastChild);
+}
+
+// ── HELPERS ──
+function show(id) {
+  ['st-empty','st-loading','st-results'].forEach(s=>document.getElementById(s).classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+// modal fecha clicando fora
+document.getElementById('modal-csv').addEventListener('click',e=>{if(e.target.id==='modal-csv')closeModal();});
+
+// init
+if(csvData.length) toast(`${csvData.length} produtos STLFlix em cache`);
+</script>
+</body>
+</html>
