@@ -132,20 +132,83 @@ body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;
 textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:10px;}
 .ma{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
 .mb{font-family:var(--sans);font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;border:0.5px solid var(--b2);background:transparent;color:var(--m2);}
-.mb.ok{background:var(--lime-bg2);border-color:var(--lime-d);color:var(--lime);}
+.tab-btn{font-family:var(--sans);font-size:11px;padding:5px 14px;border-radius:4px;border:none;background:transparent;color:var(--m2);cursor:pointer;transition:all .15s;}
+.tab-btn:hover{color:var(--t);background:var(--s2);}
+.tab-btn.active{background:var(--lime-bg);color:var(--lime);}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
+
+.conf-card{background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:border-color .15s;}
+.conf-card.high{border-color:var(--lime);}
+.conf-card.mid{border-color:#3d2500;}
+.conf-head{padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.conf-head:hover{background:var(--s2);}
+.conf-score{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0;}
+.score-high{background:var(--lime-bg2);color:var(--lime);border:1.5px solid var(--lime-d);}
+.score-mid{background:#1a0e00;color:#f0a030;border:1.5px solid #3d2500;}
+.score-low{background:var(--s2);color:var(--m2);border:1.5px solid var(--b2);}
+.conf-info{flex:1;}
+.conf-name{font-size:13px;font-weight:500;color:var(--t);margin-bottom:5px;}
+.conf-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.ct{font-size:9px;font-family:var(--mono);font-weight:700;padding:2px 7px;border-radius:3px;}
+.ct-stl{background:var(--lime-bg);color:var(--lime);border:0.5px solid var(--lime-d);}
+.ct-ml{background:#0a1600;color:#bde55a;border:0.5px solid #2a3d00;}
+.ct-yt{background:#1a0000;color:var(--red);border:0.5px solid #3d0000;}
+.ct-gap{background:#1a0800;color:#f56400;border:0.5px solid #3d1800;}
+.conf-body{padding:0 16px 14px;border-top:0.5px solid var(--b);display:none;}
+.conf-body.open{display:block;padding-top:12px;}
+.conf-detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px;}
+.conf-detail-cell{background:var(--s2);border-radius:6px;padding:8px 10px;}
+.conf-detail-src{font-size:8px;font-family:var(--mono);color:var(--m);letter-spacing:.06em;margin-bottom:3px;}
+.conf-detail-val{font-size:13px;font-weight:500;color:var(--t);font-family:var(--mono);}
+.conf-detail-label{font-size:8px;color:var(--m);}
+.conf-insight{font-size:11px;color:#8aaa30;line-height:1.6;background:var(--lime-bg);border-radius:6px;padding:8px 12px;border-left:2px solid var(--lime-d);}
+.conf-insight strong{color:var(--lime);}
+
+.radar-theme-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.radar-theme-input{flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;}
+.radar-theme-input:focus{border-color:var(--lime-d);}
+.radar-remove{background:transparent;border:none;color:var(--m);cursor:pointer;font-size:16px;padding:0 4px;line-height:1;}
+.radar-remove:hover{color:var(--red);}
+.radar-section{margin-bottom:20px;}
+.radar-sec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.radar-sec-tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 10px;border-radius:3px;text-transform:uppercase;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);}
+.radar-sec-line{flex:1;height:.5px;background:var(--b);}
+.signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.signal-card{background:var(--s);border:0.5px solid var(--b2);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s;}
+.signal-card:hover{border-color:var(--b2);}
+.signal-card.hot{border-color:#f0a030;}
+.signal-card.new-sig{border-color:var(--lime);}
+.signal-theme{font-size:8px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:5px;text-transform:uppercase;}
+.signal-title{font-size:12px;font-weight:500;color:var(--t);margin-bottom:4px;line-height:1.4;}
+.signal-meta{font-size:10px;color:var(--m2);margin-bottom:6px;}
+.signal-num{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--lime);}
+.signal-unit{font-size:8px;color:var(--lime-d);}
+.sig-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.sig-b{font-size:8px;padding:2px 6px;border-radius:3px;font-family:var(--mono);}
+.sb-hot{background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;}
+.sb-new{background:var(--lime-bg);color:var(--lime);border:0.5px solid var(--lime-d);}
+.sb-gap{background:#150900;color:#f56400;border:0.5px solid #3d1800;}
+.sb-val{background:var(--green-bg,#00150a);color:var(--green,#3ddc84);border:0.5px solid #003d1a;}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="logo">Hub de Pesquisa <em>/ STLFlix</em></div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="logo">Hub de Pesquisa <em>/ STLFlix</em></div>
+    <div style="display:flex;gap:2px;">
+      <button class="tab-btn active" id="tab-btn-busca" onclick="switchTab('busca',this)">Busca</button>
+      <button class="tab-btn" id="tab-btn-confluencia" onclick="switchTab('confluencia',this)">Confluências</button>
+      <button class="tab-btn" id="tab-btn-radar" onclick="switchTab('radar',this)">Radar Semanal</button>
+    </div>
+  </div>
   <div style="display:flex;gap:8px;">
     <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="openCSV()">Importar CSV</button>
     <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="downloadTemplate()">Template CSV</button>
   </div>
 </div>
 
-<div class="search-wrap">
+<div class="search-wrap" id="search-wrap">
   <div class="search-row">
     <div class="search-field">
       <input class="search-input" id="kw" placeholder="ex: dice tower, cable organizer, plant pot, flexi dragon..." onkeydown="if(event.key==='Enter')search()">
@@ -160,6 +223,8 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
   </div>
 </div>
 
+<!-- TAB BUSCA -->
+<div class="tab-pane active" id="tab-busca">
 <div class="layout">
   <div class="sidebar">
     <div class="sb-sec">Buscas recentes</div>
@@ -237,6 +302,44 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       </div>
 
     </div>
+  </div>
+</div>
+</div><!-- fim tab-busca -->
+
+<!-- TAB CONFLUÊNCIA -->
+<div class="tab-pane" id="tab-confluencia">
+  <div style="padding:24px;max-width:960px;">
+    <div style="margin-bottom:20px;">
+      <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:4px;">Confluências de mercado</div>
+      <div style="font-size:11px;color:var(--m2);line-height:1.6;">Produtos que aparecem em múltiplas fontes e ainda não existem no catálogo STLFlix. Faça uma busca primeiro e depois clique em Analisar.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;">
+      <button class="btn primary" onclick="runConfluence()">Analisar confluências</button>
+      <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="conf-last">faça uma busca primeiro</span>
+    </div>
+    <div id="conf-list"><div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Faça uma busca na aba Busca e depois volte aqui para ver as confluências.</div></div>
+  </div>
+</div>
+
+<!-- TAB RADAR SEMANAL -->
+<div class="tab-pane" id="tab-radar">
+  <div style="padding:24px;max-width:960px;">
+    <div style="margin-bottom:16px;">
+      <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:4px;">Radar Semanal</div>
+      <div style="font-size:11px;color:var(--m2);line-height:1.6;">Monitore temas do universo 3D toda semana. O radar busca sinais de mercado no Mercado Livre e YouTube para cada tema configurado.</div>
+    </div>
+
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:500;color:var(--m3);margin-bottom:12px;">Temas monitorados</div>
+      <div id="radar-themes-list"></div>
+      <button class="btn" style="margin-top:8px;border-style:dashed;color:var(--lime-d);border-color:var(--lime-d);" onclick="addRadarTheme()">+ Adicionar tema</button>
+      <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
+        <button class="btn primary" onclick="runRadar()">Rodar radar agora</button>
+        <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="radar-last">nunca rodado</span>
+      </div>
+    </div>
+
+    <div id="radar-results"><div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Configure os temas e clique em "Rodar radar" para ver os sinais da semana.</div></div>
   </div>
 </div>
 
@@ -620,7 +723,206 @@ function toast(msg) {
   setTimeout(()=>t.classList.remove('on'),2500);
 }
 
-// modal fecha clicando fora
+// ── TABS ──
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  // oculta/mostra a search-wrap
+  const sw = document.getElementById('search-wrap');
+  if(sw) sw.style.display = name==='busca' ? '' : 'none';
+  if(name==='radar') initRadarThemes();
+}
+
+// ── CONFLUÊNCIA ──
+function runConfluence() {
+  const list = document.getElementById('conf-list');
+  const {stl, ml, yt} = lastRes;
+  const kw = lastKw;
+  if (!kw) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Faça uma busca primeiro.</div>'; return; }
+
+  const strapiNames = stl.map(p=>p.nome.toLowerCase());
+  const existsInSTL = nome => strapiNames.some(n=>n.includes(nome.toLowerCase().split(' ')[0]));
+
+  // monta variantes do termo para cruzar nas fontes
+  const variants = [
+    `${kw}`,
+    `${kw} modular`,
+    `${kw} magnético`,
+    `${kw} minimalista`,
+    `${kw} storage`,
+    `${kw} art déco`,
+    `${kw} travel`,
+  ];
+
+  const cards = variants.map((v, i) => {
+    const inML  = ml.some(p => p.nome.toLowerCase().includes(kw.toLowerCase()));
+    const inYT  = yt.some(p => p.nome.toLowerCase().includes(kw.toLowerCase()));
+    const inSTL = existsInSTL(v);
+    const gap   = !inSTL;
+    const srcCount = (inML?1:0) + (inYT?1:0) + (stl.length>0?1:0);
+    const score = Math.min(srcCount*2 + (gap?2:0) + (i===0?1:0), 10);
+
+    const mlTop  = ml[i]  || ml[0];
+    const ytTop  = yt[i]  || yt[0];
+    const stlTop = stl[i] || stl[0];
+
+    const details = [
+      stlTop && {src:'STLFlix',     val:stlTop.num||'—',  label:'downloads'},
+      mlTop  && {src:'Mercado Livre',val:mlTop.num||'—',  label:'vendas'},
+      ytTop  && {src:'YouTube',     val:ytTop.num||'—',   label:'views'},
+      {src:'Catálogo STLFlix', val: gap?'ausente':'existe', label:'status'},
+    ].filter(Boolean);
+
+    const tags = [
+      stl.length && {label:'STLFlix', cls:'ct-stl'},
+      inML       && {label:'ML Brasil', cls:'ct-ml'},
+      inYT       && {label:'YouTube', cls:'ct-yt'},
+      gap        && {label:'GAP catálogo', cls:'ct-gap'},
+    ].filter(Boolean);
+
+    const insight = `${srcCount} fonte${srcCount>1?'s':''} confirmam demanda para "${v}".${gap?' <strong>Produto ausente no catálogo STLFlix — janela de entrada aberta.</strong>':' Produto já existe — avaliar diferenciação.'}`;
+
+    return {v, score, gap, tags, details, insight};
+  }).sort((a,b)=>b.score-a.score);
+
+  window._confCards = cards;
+  document.getElementById('conf-last').textContent = `última análise: ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+
+  list.innerHTML = cards.map((c,i) => `
+    <div class="conf-card ${c.score>=8?'high':c.score>=6?'mid':''}">
+      <div class="conf-head" onclick="toggleConf(${i})">
+        <div class="conf-score ${c.score>=8?'score-high':c.score>=6?'score-mid':'score-low'}">${c.score.toFixed(1)}</div>
+        <div class="conf-info">
+          <div class="conf-name">${c.v}</div>
+          <div class="conf-tags">${c.tags.map(t=>`<span class="ct ${t.cls}">${t.label}</span>`).join('')}</div>
+        </div>
+        <button class="btn" style="font-size:10px;padding:3px 10px;" onclick="event.stopPropagation();copyConf(${i})">Copiar</button>
+      </div>
+      <div class="conf-body" id="conf-body-${i}">
+        <div class="conf-detail">${c.details.map(d=>`<div class="conf-detail-cell"><div class="conf-detail-src">${d.src}</div><div class="conf-detail-val">${d.val}</div><div class="conf-detail-label">${d.label}</div></div>`).join('')}</div>
+        <div class="conf-insight">${c.insight}</div>
+        <div style="margin-top:10px;display:flex;gap:6px;">
+          <a href="https://platform.stlflix.com/pt-BR/explore?search=${encodeURIComponent(c.v)}" target="_blank" class="btn" style="font-size:10px;">Ver na STLFlix →</a>
+          <button class="btn primary" style="font-size:10px;" onclick="copyConfBriefing(${i})">Briefing p/ modeladores</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleConf(i) {
+  const b = document.getElementById('conf-body-'+i);
+  if(b) b.classList.toggle('open');
+}
+function copyConf(i) {
+  const c = (window._confCards||[])[i]; if(!c) return;
+  const t = `CONFLUÊNCIA: ${c.v}\nScore: ${c.score}/10\n${c.gap?'GAP NO CATÁLOGO STLFlix\n':''}Fontes: ${c.tags.map(t=>t.label).join(', ')}\n${c.details.map(d=>`${d.src}: ${d.val} ${d.label}`).join('\n')}`;
+  navigator.clipboard.writeText(t).then(()=>toast('Card copiado!'));
+}
+function copyConfBriefing(i) {
+  const c = (window._confCards||[])[i]; if(!c) return;
+  const t = `BRIEFING — ${c.v}\nScore: ${c.score}/10\n${c.gap?'GAP — ausente no catálogo STLFlix\n':'Produto existente\n'}\nDados:\n${c.details.map(d=>`  ${d.src}: ${d.val} ${d.label}`).join('\n')}\n\n${c.insight.replace(/<[^>]+>/g,'')}`;
+  navigator.clipboard.writeText(t).then(()=>toast('Briefing copiado!'));
+}
+
+// ── RADAR SEMANAL ──
+const DEFAULT_THEMES = [
+  {id:1, tema:'organizadores de mesa e desk setup'},
+  {id:2, tema:'RPG e jogos de tabuleiro'},
+  {id:3, tema:'acessórios para pets'},
+  {id:4, tema:'iluminação decorativa'},
+  {id:5, tema:'garden e plantas'},
+  {id:6, tema:'cozinha funcional'},
+];
+let radarThemes = JSON.parse(localStorage.getItem('stlflix_radar')||'null') || DEFAULT_THEMES;
+
+function initRadarThemes() {
+  const list = document.getElementById('radar-themes-list');
+  list.innerHTML = radarThemes.map(t=>`
+    <div class="radar-theme-row" data-id="${t.id}">
+      <input class="radar-theme-input" value="${t.tema}" onchange="updateTheme(${t.id},this.value)" placeholder="ex: organizadores de mesa impressão 3d">
+      <button class="radar-remove" onclick="removeTheme(${t.id})" title="Remover">×</button>
+    </div>`).join('');
+}
+function addRadarTheme() {
+  const id = Date.now();
+  radarThemes.push({id, tema:''});
+  saveThemes(); initRadarThemes();
+  setTimeout(()=>{ const inputs=document.querySelectorAll('.radar-theme-input'); if(inputs.length) inputs[inputs.length-1].focus(); },50);
+}
+function removeTheme(id) { radarThemes=radarThemes.filter(t=>t.id!==id); saveThemes(); initRadarThemes(); }
+function updateTheme(id,val) { const t=radarThemes.find(t=>t.id===id); if(t){t.tema=val;saveThemes();} }
+function saveThemes() { localStorage.setItem('stlflix_radar',JSON.stringify(radarThemes)); }
+
+async function runRadar() {
+  const btn = document.querySelector('#tab-radar .btn.primary');
+  btn.textContent='VARRENDO...'; btn.disabled=true;
+  const results = document.getElementById('radar-results');
+  results.innerHTML = '<div style="text-align:center;padding:30px;color:var(--m2);font-size:12px;">Buscando sinais...</div>';
+
+  const themes = radarThemes.filter(t=>t.tema.trim());
+  if(!themes.length){ results.innerHTML='<div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Adicione temas para monitorar.</div>'; btn.textContent='Rodar radar agora'; btn.disabled=false; return; }
+
+  let html = '';
+  for(const theme of themes) {
+    const signals = await fetchRadarSignals(theme);
+    if(!signals.length) continue;
+    html += `<div class="radar-section">
+      <div class="radar-sec-head">
+        <span class="radar-sec-tag">${theme.tema}</span>
+        <span style="font-size:10px;color:var(--m2);">${signals.length} sinais</span>
+        <div class="radar-sec-line"></div>
+        <button class="btn" style="font-size:10px;padding:3px 10px;" onclick="copyRadarSection('${encodeURIComponent(theme.tema)}',${JSON.stringify(signals).replace(/'/g,"&#39;")})">Copiar</button>
+      </div>
+      <div class="signal-grid">${signals.map(s=>renderSignal(s)).join('')}</div>
+    </div>`;
+  }
+
+  results.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Nenhum sinal encontrado.</div>';
+  document.getElementById('radar-last').textContent = `última execução: ${new Date().toLocaleString('pt-BR',{weekday:'short',hour:'2-digit',minute:'2-digit'})}`;
+  btn.textContent='Rodar radar agora'; btn.disabled=false;
+}
+
+async function fetchRadarSignals(theme) {
+  const signals = [];
+  const kw = theme.tema;
+  // ML real para o tema
+  try {
+    const kwPT = await Promise.race([translate(kw), new Promise(r=>setTimeout(()=>r(kw),3000))]);
+    const r = await fetch(`https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(kwPT)}&limit=6&sort=sold_quantity_desc`,{signal:AbortSignal.timeout(5000)});
+    if(r.ok) {
+      const d = await r.json();
+      (d.results||[]).slice(0,3).filter(p=>p.sold_quantity>10).forEach(p=>{
+        signals.push({tipo:p.sold_quantity>100?'hot':'val', tema:kw, titulo:p.title, meta:`R$${Math.round(p.price).toLocaleString('pt-BR')}`, num:p.sold_quantity.toLocaleString('pt-BR'), unit:'vendidos · ML Brasil', badges:p.sold_quantity>100?['alta demanda','ML Brasil']:['validado','ML Brasil'], link:p.permalink});
+      });
+    }
+  } catch {}
+  // YouTube real para o tema
+  try {
+    const ytItems = await Promise.race([fetchYT(kw), new Promise(r=>setTimeout(()=>r([]),7000))]);
+    ytItems.slice(0,2).forEach(v=>{
+      signals.push({tipo:'yt', tema:kw, titulo:v.nome, meta:v.drop||'YouTube', num:v.num, unit:'views', badges:['YouTube',v.numRaw>100000?'viral':'relevante'], link:v.link});
+    });
+  } catch {}
+  return signals;
+}
+
+function renderSignal(s) {
+  const border = s.tipo==='hot'?'hot':s.tipo==='yt'?'':s.tipo==='val'?'':'';
+  const numColor = s.tipo==='yt'?'color:var(--red)':'color:var(--lime)';
+  const bClass = {'alta demanda':'sb-hot','viral':'sb-hot','YouTube':'ct-yt','validado':'sb-val','relevante':'sb-val','ML Brasil':'ct-ml','novo':'sb-new','gap':'sb-gap'};
+  return `<div class="signal-card ${border}" onclick="window.open('${s.link}','_blank')">
+    <div class="signal-theme">${s.tema}</div>
+    <div class="signal-title">${s.titulo}</div>
+    <div class="signal-meta">${s.meta}</div>
+    <div class="signal-num" style="${numColor}">${s.num}</div>
+    <div class="signal-unit">${s.unit}</div>
+    <div class="sig-badges">${(s.badges||[]).map(b=>`<span class="sig-b ${bClass[b]||'sb-val'}">${b}</span>`).join('')}</div>
+  </div>`;
+}
+
+// ── init ──
 document.getElementById('modal-csv').addEventListener('click',e=>{if(e.target.id==='modal-csv')closeModal();});
 
 // init
