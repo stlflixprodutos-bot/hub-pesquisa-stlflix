@@ -370,7 +370,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 // ── CONFIG ──
 const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZglpk8yO0E7kZvSNCXB33rSAIUJkGIAKc41D9GdeNWNJYwWg9aTSrwsw4I7lTQPmOHCbwJzD6d1-X/pub?output=csv';
 const YT_KEY    = 'AIzaSyBovJAFLOfyKJPpAMdWJWDhkZOFG2Ck78E';
-const PROXY     = url => `https://corsproxy.io/?${encodeURIComponent(url)}`;
 const IMG_PROXY = url => url ? `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=300&h=300&fit=cover` : '';
 
 // ── STATE ──
@@ -440,26 +439,23 @@ function splitLine(line) {
 
 // ── LOAD SHEETS ──
 async function loadSheets() {
-  if (csvData.length && Date.now()-csvTs < 10*60*1000) return; // cache válido por 10min
-  const proxies = [
-    `https://corsproxy.io/?${encodeURIComponent(SHEETS_URL)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(SHEETS_URL)}`,
-    SHEETS_URL
-  ];
-  const tryOne = async url => {
-    const r = await fetch(url, {signal:AbortSignal.timeout(5000)});
-    if(!r.ok) throw 0;
-    const t = await r.text();
-    if(!t.includes(',')) throw 0;
-    return parseCSV(t);
-  };
+  if (csvData.length && Date.now()-csvTs < 10*60*1000) return;
   try {
-    const rows = await Promise.any(proxies.map(tryOne));
+    // usa a função serverless da própria Vercel — sem CORS, sem proxy externo
+    const r = await fetch('/api/sheets', {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`${r.status}`);
+    const text = await r.text();
+    if (!text.includes(',') || text.length < 50) throw new Error('empty');
+    const rows = parseCSV(text);
+    if (!rows.length) throw new Error('no rows');
     csvData = rows;
     csvTs = Date.now();
     save('stlflix_csv', csvData);
     save('stlflix_csv_ts', csvTs);
-  } catch { /* usa cache existente */ }
+    console.log(`Planilha carregada: ${rows.length} produtos`);
+  } catch(e) {
+    console.warn('Planilha erro:', e.message, '— usando cache local se disponível');
+  }
 }
 
 // ── FETCH ML ──
@@ -502,34 +498,23 @@ async function search() {
 
 // ── ML via proxy CORS — necessário quando rodando em domínio externo (Vercel) ──
 async function fetchMLItems(term) {
-  const mlUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(term)}&limit=25&sort=sold_quantity_desc`;
-  const proxies = [
-    mlUrl,  // tenta direto primeiro — funciona em alguns browsers
-    `https://corsproxy.io/?${encodeURIComponent(mlUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(mlUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(mlUrl)}`,
-  ];
-  for (const url of proxies) {
-    try {
-      const r = await fetch(url, {signal: AbortSignal.timeout(6000)});
-      if (!r.ok) continue;
-      const text = await r.text();
-      // allorigins retorna o JSON como string dentro de {contents:"..."}
-      let data;
-      try { data = JSON.parse(text); } catch { continue; }
-      // se veio embrulhado pelo proxy allorigins
-      if (data.contents) { try { data = JSON.parse(data.contents); } catch { continue; } }
-      if (!data.results) continue;
-      return data.results.map(p => ({
-        nome: p.title,
-        num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
-        numRaw: p.sold_quantity||0,
-        imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
-        link: p.permalink
-      }));
-    } catch { continue; }
+  try {
+    // usa a função serverless da própria Vercel — sem CORS, sem proxy externo
+    const r = await fetch(`/api/ml?q=${encodeURIComponent(term)}`, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`${r.status}`);
+    const data = await r.json();
+    if (!data.results) throw new Error('no results');
+    return data.results.map(p => ({
+      nome: p.title,
+      num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
+      numRaw: p.sold_quantity||0,
+      imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
+      link: p.permalink
+    }));
+  } catch(e) {
+    console.warn('ML erro:', e.message);
+    return [];
   }
-  return [];
 }
 
   const mlPromise = !activeSet.has('ml') ? Promise.resolve({items:[], term:kw}) :
