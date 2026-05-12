@@ -62,7 +62,7 @@ export default async function handler(req) {
         downloadsCount
         likesCount
         publishedAt
-        price { centAmount currencyCode }
+        price { cents currency formatted }
       }
     }
   }`;
@@ -84,7 +84,7 @@ export default async function handler(req) {
       total: d?.data?.creationsSearchBatch?.total || 0,
       results: items.map(i => ({
         nome:      i.name || i.slug,
-        preco:     i.price?.centAmount > 0 ? `$${(i.price.centAmount/100).toFixed(2)}` : 'Grátis',
+        preco:     i.price?.formatted || (i.price?.cents > 0 ? `$${(i.price.cents/100).toFixed(2)}` : 'Grátis'),
         downloads: i.downloadsCount || 0,
         likes:     i.likesCount || 0,
         data:      i.publishedAt ? i.publishedAt.substring(0,10) : '',
