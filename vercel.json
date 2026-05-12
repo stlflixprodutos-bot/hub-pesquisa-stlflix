@@ -1,7 +1,5 @@
 {
-  "functions": {
-    "api/ml.js": { "runtime": "edge" },
-    "api/sheets.js": { "runtime": "edge" },
-    "api/cults.js": { "runtime": "edge" }
-  }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
 }
