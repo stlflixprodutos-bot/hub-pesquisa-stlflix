@@ -478,19 +478,21 @@ async function loadSheets() {
 // ── FETCH CULTS3D ──
 async function fetchCults(kw) {
   try {
-    const r = await fetch(`/api/cults?q=${encodeURIComponent(kw)}&paid=true`, {signal: AbortSignal.timeout(8000)});
+    const r = await fetch(`/api/cults?q=${encodeURIComponent(kw)}&paid=true`, {signal: AbortSignal.timeout(10000)});
     if (!r.ok) throw new Error(`Cults ${r.status}`);
     const data = await r.json();
-    return (data.results || []).map(p => ({
-      nome:      p.nome,
-      num:       p.downloads ? p.downloads.toLocaleString('pt-BR') : '—',
-      numRaw:    p.downloads || 0,
-      data:      p.data || '',
-      imagem_url: p.imagem || '',
-      link:      p.link,
-      drop:      p.preco || '',
-      tipo:      'cults'
-    }));
+    return (data.results || [])
+      .sort((a,b) => (b.downloads||0) - (a.downloads||0))
+      .map(p => ({
+        nome:      p.nome,
+        num:       p.downloads ? p.downloads.toLocaleString('pt-BR') : '—',
+        numRaw:    p.downloads || 0,
+        data:      p.data || '',
+        imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+        link:      p.link,
+        drop:      p.preco || '',
+        tipo:      'cults'
+      }));
   } catch(e) {
     console.warn('Cults erro:', e.message);
     return [];
