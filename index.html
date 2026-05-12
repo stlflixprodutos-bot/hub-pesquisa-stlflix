@@ -15,7 +15,7 @@
   --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
 }
 body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
- 
+
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--lime);letter-spacing:.1em;}
 .logo em{color:var(--m2);font-weight:400;}
@@ -38,7 +38,6 @@ body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;
 .c-yt{background:#1a0000;color:var(--red);border-color:#3d0000;}
 .c-cults{background:#1a0010;color:#f472b6;border-color:#3d0028;}
 .t-cults{background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;}
-.t-etsy{background:#1a0800;color:#f56400;border:0.5px solid #3d1800;}
 
 .layout{display:flex;min-height:calc(100vh - 120px);}
 .sidebar{width:180px;flex-shrink:0;background:var(--s);border-right:1px solid var(--b);padding:14px 0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;}
@@ -84,7 +83,11 @@ body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;
 .src-line{flex:1;height:.5px;background:var(--b);}
 
 /* grid normal para STL */
-.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.prod-grid.scroll{display:flex;flex-wrap:wrap;gap:8px;}
+.prod-grid.collapsed{max-height:340px;overflow:hidden;position:relative;}
+.prod-grid.collapsed::after{content:"";position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,var(--bg));pointer-events:none;}
+.expand-btn:hover{color:var(--t);border-color:var(--b3);}
 /* scroll horizontal para ML e YT */
 .prod-grid.scroll{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;}
 .prod-grid.scroll::-webkit-scrollbar{height:4px;}
@@ -221,7 +224,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="chip c-ml"  data-src="ml"  onclick="toggleChip(this)">Mercado Livre BR</div>
     <div class="chip c-yt"  data-src="yt"  onclick="toggleChip(this)">YouTube</div>
     <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
-    <div class="chip" data-src="etsy" onclick="toggleChip(this)" style="background:#1a0800;color:#f56400;border:0.5px solid #3d1800;"><span class="chip-dot" style="background:#f56400;"></span>Etsy</div>
   </div>
 </div>
 
@@ -296,6 +298,29 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       </div>
     </div>
 
+    <!-- Nuvem de palavras -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);">
+        <span style="font-size:11px;font-weight:500;color:var(--m3);">Explorador de termos — caminhos de pesquisa</span>
+        <div style="font-size:10px;color:var(--m);margin-top:3px;">Digite um produto e descubra termos relacionados para explorar no Pinterest e Cults</div>
+      </div>
+      <div style="padding:14px 16px;">
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <input class="search-input" id="word-cloud-input" placeholder="ex: fidget de futebol, luminária monumento, suporte modular..." style="flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--t);outline:none;">
+          <button class="btn primary" onclick="runWordCloud()">Explorar termos</button>
+        </div>
+        <div id="word-cloud-result" style="display:none;">
+          <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;">TERMOS RELACIONADOS — clique para buscar</div>
+          <div id="word-cloud-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+          <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;">ABRIR NO PINTEREST</div>
+          <div id="word-cloud-pinterest" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+          <div style="background:var(--lime-bg);border:0.5px solid var(--lime-d);border-radius:8px;padding:10px 14px;">
+            <div style="font-size:11px;color:#8aaa30;line-height:1.6;" id="word-cloud-insight"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -314,7 +339,18 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 </div>
 
 <!-- TAB BUSCA -->
-<div class="tab-pane" id="tab-busca">
+<div class="tab-pane" id="tab-busca"></div>
+
+<!-- Explorador de termos — abaixo dos chips -->
+<div id="word-cloud-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:10px 24px;display:none;">
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+    <span style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;white-space:nowrap;">TERMOS RELACIONADOS</span>
+    <div id="word-cloud-tags" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;"></div>
+    <div id="word-cloud-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+  </div>
+  <div id="word-cloud-insight" style="font-size:10px;color:#8aaa30;margin-top:6px;line-height:1.5;display:none;"></div>
+</div>
+
 <div class="layout">
   <div class="sidebar">
     <div class="sb-sec">Buscas recentes</div>
@@ -323,7 +359,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:var(--red)"></div><span class="sb-label">YouTube</span><span class="sb-count" id="cnt-yt">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
-    <div class="sb-item"><div class="sb-dot" style="background:#f56400;"></div><span class="sb-label">Etsy</span><span class="sb-count" id="cnt-etsy">—</span></div>
   </div>
 
   <div class="main">
@@ -364,7 +399,8 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
           <span class="src-meta" id="meta-stl">—</span>
           <div class="src-line"></div>
         </div>
-        <div class="prod-grid" id="grid-stl"></div>
+        <div class="prod-grid collapsed" id="grid-stl"></div>
+        <button class="expand-btn" id="expand-grid-stl" onclick="toggleExpand('grid-stl')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
       <!-- ML -->
@@ -384,7 +420,8 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
           <span class="src-meta" id="meta-yt">—</span>
           <div class="src-line"></div>
         </div>
-        <div class="prod-grid scroll" id="grid-yt"></div>
+        <div class="prod-grid scroll collapsed" id="grid-yt"></div>
+        <button class="expand-btn" id="expand-grid-yt" onclick="toggleExpand('grid-yt')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
       <!-- Cults3D -->
@@ -394,54 +431,14 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
           <span class="src-meta" id="meta-cults">—</span>
           <div class="src-line"></div>
         </div>
-        <div class="prod-grid scroll" id="grid-cults"></div>
+        <div class="prod-grid scroll collapsed" id="grid-cults"></div>
+        <button class="expand-btn" id="expand-grid-cults" onclick="toggleExpand('grid-cults')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
-      <!-- Etsy -->
-      <div class="src-section" id="sec-etsy">
-        <div class="src-head">
-          <span class="src-tag t-etsy">Etsy</span>
-          <span class="src-meta" id="meta-etsy">—</span>
-          <div class="src-line"></div>
-        </div>
-        <div class="prod-grid scroll" id="grid-etsy"></div>
-        <!-- Tags e categorias Etsy -->
-        <div id="etsy-tags-wrap" style="display:none;margin-top:10px;">
-          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">TAGS MAIS COMUNS — clique para explorar</div>
-          <div id="etsy-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;"></div>
-          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">CATEGORIAS</div>
-          <div id="etsy-cats" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;"></div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <a id="etsy-amazon-link" href="#" target="_blank" class="btn" style="font-size:10px;">🔍 Buscar na Amazon USA</a>
-            <a id="etsy-pinterest-link" href="#" target="_blank" class="btn" style="font-size:10px;">📌 Pinterest</a>
-            <a id="etsy-behance-link" href="#" target="_blank" class="btn" style="font-size:10px;">🎨 Behance</a>
-          </div>
-        </div>
+      <div class="export-bar">
+        <button class="btn primary" onclick="copyMiro()">Copiar p/ Miro</button>
+        <button class="btn" onclick="copyBriefing()">Gerar briefing</button>
       </div>
-
-
-    <!-- Explorador de termos -->
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin:16px 0 0;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:10px;">
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);">TERMOS</span>
-        <span style="font-size:11px;font-weight:500;color:var(--m3);">Explorador de termos — aprofunde a pesquisa</span>
-      </div>
-      <div style="padding:14px 16px;">
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <input id="word-cloud-input" placeholder="ex: fidget de futebol, luminária monumento, suporte modular..." style="flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--t);outline:none;font-family:var(--sans);" onkeydown="if(event.key==='Enter')runWordCloud()">
-          <button class="btn primary" onclick="runWordCloud()">Explorar</button>
-        </div>
-        <div id="word-cloud-result" style="display:none;">
-          <div style="font-size:9px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;">TERMOS RELACIONADOS — clique para buscar nas plataformas</div>
-          <div id="word-cloud-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;"></div>
-          <div style="font-size:9px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:6px;">ABRIR NO PINTEREST</div>
-          <div id="word-cloud-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;"></div>
-          <div style="background:var(--lime-bg);border:0.5px solid var(--lime-d);border-radius:8px;padding:8px 12px;">
-            <div style="font-size:11px;color:#8aaa30;line-height:1.6;" id="word-cloud-insight"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     </div>
   </div>
@@ -485,7 +482,7 @@ let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
 let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
 let lastKw    = '';
 let lastRes   = {};
-let activeSet = new Set(['stl','yt','cults','etsy']);
+let activeSet = new Set(['stl','yt','cults']);
 
 // ── TRADUÇÃO ──
 const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
@@ -593,62 +590,6 @@ async function fetchCults(kw) {
   }
 }
 
-// ── FETCH ETSY ──
-async function fetchEtsy(kw) {
-  try {
-    const r = await fetch(`/api/etsy?q=${encodeURIComponent(kw)}&limit=25`, {signal: AbortSignal.timeout(10000)});
-    if (!r.ok) throw new Error(`Etsy ${r.status}`);
-    const d = await r.json();
-
-    // renderiza tags e categorias
-    if (d.allTags?.length || d.allCats?.length) {
-      renderEtsyTags(d.allTags || [], d.allCats || [], kw);
-    }
-
-    return (d.results || [])
-      .sort((a,b) => (b.reviews||0) - (a.reviews||0))
-      .map(p => ({
-        nome:      p.nome,
-        num:       p.reviews ? `${p.reviews.toLocaleString('pt-BR')} favoritos` : '—',
-        numRaw:    p.reviews || 0,
-        data:      '',
-        imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
-        link:      p.link,
-        drop:      p.preco || '',
-        tipo:      'etsy'
-      }));
-  } catch(e) {
-    console.warn('Etsy erro:', e.message);
-    return [];
-  }
-}
-
-function renderEtsyTags(tags, cats, kw) {
-  const wrap = document.getElementById('etsy-tags-wrap');
-  const tagsEl = document.getElementById('etsy-tags');
-  const catsEl = document.getElementById('etsy-cats');
-  if (!wrap) return;
-
-  tagsEl.innerHTML = tags.slice(0,30).map(t => `
-    <span style="background:var(--s2);border:0.5px solid #3d1800;border-radius:20px;padding:4px 10px;font-size:10px;color:#f56400;cursor:pointer;"
-      onclick="document.getElementById('kw').value='${t}';doSearch()">
-      ${t}
-    </span>`).join('');
-
-  catsEl.innerHTML = cats.slice(0,15).map(t => `
-    <span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:4px 10px;font-size:10px;color:var(--m2);cursor:pointer;"
-      onclick="document.getElementById('kw').value='${t}';doSearch()">
-      ${t}
-    </span>`).join('');
-
-  // links de pesquisa externas
-  document.getElementById('etsy-amazon-link').href = `https://www.amazon.com/s?k=${encodeURIComponent(kw)}`;
-  document.getElementById('etsy-pinterest-link').href = `https://pinterest.com/search/pins/?q=${encodeURIComponent(kw + ' 3d print')}`;
-  document.getElementById('etsy-behance-link').href = `https://www.behance.net/search/projects/?search=${encodeURIComponent(kw)}`;
-
-  wrap.style.display = 'block';
-}
-
 // ── FETCH YOUTUBE ──
 async function fetchYT(kw) {
   const q = encodeURIComponent(`${kw} 3d print`);
@@ -683,7 +624,7 @@ async function search() {
   const stlPromise = !activeSet.has('stl') ? Promise.resolve([]) :
     loadSheets()
       .catch(()=>{})
-      .then(()=>{ const q=kw.toLowerCase(); return csvData.filter(r=>r.nome&&r.nome.toLowerCase().includes(q)).slice(0,12); });
+      .then(()=>{ const q=kw.toLowerCase(); return csvData.filter(r=>r.nome&&r.nome.toLowerCase().includes(q)).slice(0,50); });
 
 // ── ML via proxy CORS — necessário quando rodando em domínio externo (Vercel) ──
 async function fetchMLItems(term) {
@@ -715,26 +656,22 @@ async function fetchMLItems(term) {
   const cultsPromise = activeSet.has('cults')
     ? fetchCults(kw).catch(()=>[])
     : Promise.resolve([]);
-  const etsyPromise = activeSet.has('etsy')
-    ? fetchEtsy(kw).catch(()=>[])
-    : Promise.resolve([]);
 
   // timeout geral de 10s — mostra o que chegou
   const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
 
-  const [stlItems, mlResult, ytItems, cultsItems, etsyItems] = await Promise.all([
+  const [stlItems, mlResult, ytItems, cultsItems] = await Promise.all([
     wrap(stlPromise, []),
     wrap(mlPromise,  {items:[], term:kw}),
     wrap(ytPromise,  []),
     wrap(cultsPromise, []),
-    wrap(etsyPromise, []),
   ]);
 
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
-  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems, etsy:etsyItems };
-  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, etsy:etsyItems.length, csvTotal:csvData.length });
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems };
+  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
   show('st-results');
@@ -743,19 +680,21 @@ async function fetchMLItems(term) {
 
 // ── RENDER ──
 function renderAll(kw) {
-  // preenche e roda o explorador de termos automaticamente com o termo buscado
-  const wcInput = document.getElementById('word-cloud-input');
-  if (wcInput) {
-    wcInput.value = kw;
-    runWordCloud();
-  }
-  const { stl, ml, mlTerm, yt, cults, etsy } = lastRes;
+  // mostra barra de termos relacionados logo abaixo dos chips
+  showWordCloudBar(kw);
+
+  // reseta grids para estado colapsado
+  ['grid-stl','grid-yt','grid-cults'].forEach(id => {
+    const g = document.getElementById(id); if (g) g.classList.add('collapsed');
+    const b = document.getElementById('expand-'+id); if (b) { b.style.display='none'; b.textContent='Ver mais ↓'; }
+  });
+
+  const { stl, ml, mlTerm, yt, cults } = lastRes;
 
   // sidebar
   document.getElementById('cnt-stl').textContent = stl.length;
   document.getElementById('cnt-yt').textContent  = yt.length;
   document.getElementById('cnt-cults').textContent = cults.length;
-  document.getElementById('cnt-etsy').textContent  = etsy.length;
 
   // intel
   document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
@@ -768,31 +707,23 @@ function renderAll(kw) {
   } else {
     document.getElementById('meta-stl').textContent = stl.length ? `${stl.length} no catálogo · ${csvData.length} total` : `sem resultados (${csvData.length} produtos no catálogo)`;
   }
-
-  // ML
-  renderGrid('grid-ml', ml, 'ml');
-  const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
-  document.getElementById('meta-ml').textContent = ml.length
-    ? `${ml.length} resultados${translated ? ` · buscado como "${mlTerm}"` : ''}`
-    : 'sem resultados';
+  showExpandBtn('grid-stl', stl.length);
 
   // YouTube
   renderGrid('grid-yt', yt, 'yt');
+  document.getElementById('meta-yt').textContent = yt.length ? `${yt.length} vídeos por views` : 'sem resultados';
+  showExpandBtn('grid-yt', yt.length);
 
   // Cults3D
   renderGrid('grid-cults', cults, 'cults');
-  document.getElementById('meta-cults').textContent = cults.length
-    ? `${cults.length} modelos pagos · Cults3D`
-    : 'sem resultados';
+  document.getElementById('meta-cults').textContent = cults.length ? `${cults.length} modelos pagos · Cults3D` : 'sem resultados';
+  showExpandBtn('grid-cults', cults.length);
+}
 
-  // Etsy
-  renderGrid('grid-etsy', etsy, 'etsy');
-  document.getElementById('meta-etsy').textContent = etsy.length
-    ? `${etsy.length} produtos · ordenados por favoritos · Etsy`
-    : 'sem resultados — configure a API key do Etsy';
-  document.getElementById('meta-yt').textContent = yt.length
-    ? `${yt.length} vídeos por views`
-    : 'sem resultados';
+function showExpandBtn(gridId, count) {
+  const btn = document.getElementById('expand-' + gridId);
+  if (!btn) return;
+  btn.style.display = count > 8 ? 'block' : 'none';
 }
 
 function renderGrid(id, items, tipo) {
@@ -1108,7 +1039,57 @@ document.getElementById('yt-modal').addEventListener('click', e => {
   if (e.target.id === 'yt-modal') closeYTModal();
 });
 
-// ── TABS ──
+function toggleExpand(gridId) {
+  const grid = document.getElementById(gridId);
+  const btn  = document.getElementById('expand-' + gridId);
+  if (!grid || !btn) return;
+  const collapsed = grid.classList.toggle('collapsed');
+  btn.textContent = collapsed ? 'Ver mais ↓' : 'Ver menos ↑';
+}
+
+// mostra a barra de termos logo abaixo dos chips
+function showWordCloudBar(kw) {
+  const bar = document.getElementById('word-cloud-bar');
+  if (!bar) return;
+  // roda a lógica de termos mas popula a barra, não o painel antigo
+  const input = kw.toLowerCase().trim();
+  let terms = SEMANTIC_MAP[input] || [];
+  if (!terms.length) {
+    for (const [key,vals] of Object.entries(SEMANTIC_MAP)) {
+      if (input.includes(key) || key.includes(input.split(' ')[0])) terms=[...terms,...vals];
+    }
+  }
+  terms = [...new Set(terms)];
+  if (!terms.length) {
+    terms = [kw+' 3d print',kw+' holder',kw+' stand',kw+' organizer',kw+' modular',kw+' articulated',kw+' geometric',kw+' flexi'];
+  }
+
+  const tagsEl     = document.getElementById('word-cloud-tags');
+  const pinterestEl= document.getElementById('word-cloud-pinterest');
+  const insightEl  = document.getElementById('word-cloud-insight');
+
+  tagsEl.innerHTML = terms.slice(0,20).map(t=>`
+    <span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--m3);cursor:pointer;white-space:nowrap;"
+      onmouseover="this.style.borderColor='var(--lime-d)';this.style.color='var(--lime)'"
+      onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--m3)'"
+      onclick="document.getElementById('kw').value='${t}';doSearch()">
+      ${t}</span>`).join('');
+
+  pinterestEl.innerHTML = terms.slice(0,4).map(t=>`
+    <a href="https://pinterest.com/search/pins/?q=${encodeURIComponent(t+' 3d print')}" target="_blank"
+       style="background:#1a0010;border:0.5px solid #3d0028;border-radius:20px;padding:3px 10px;font-size:10px;color:#f472b6;text-decoration:none;white-space:nowrap;">
+      📌 ${t}</a>`).join('');
+
+  const hasMatch = !!SEMANTIC_MAP[input];
+  insightEl.textContent = hasMatch
+    ? `"${kw}" → ${terms.length} termos mapeados. Top: ${terms.slice(0,3).join(', ')}.`
+    : `"${kw}" → ${terms.length} variações geradas por proximidade semântica.`;
+  insightEl.style.display = 'block';
+
+  bar.style.display = 'block';
+}
+
+
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
