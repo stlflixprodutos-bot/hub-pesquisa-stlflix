@@ -13,7 +13,7 @@
   --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
   --red:#ff4444;--green:#3ddc84;--blue:#4a9eff;
   --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
-} 
+}
 body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
 
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
@@ -221,7 +221,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
   <div class="chips">
     <span class="chip-label">FONTES</span>
     <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
-    <div class="chip c-ml"  data-src="ml"  onclick="toggleChip(this)">Mercado Livre BR</div>
     <div class="chip c-yt"  data-src="yt"  onclick="toggleChip(this)">YouTube</div>
     <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
   </div>
@@ -368,7 +367,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       <div class="empty-wrap">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="21" cy="21" r="14" stroke="#555" stroke-width="2"/><path d="M32 32L42 42" stroke="#555" stroke-width="2" stroke-linecap="round"/><path d="M16 21h10M21 16v10" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
         <div class="empty-title">Digite uma palavra-chave para começar</div>
-        <div class="empty-sub">Busca simultânea em STLFlix, Mercado Livre, YouTube e Cults3D<br>com tradução automática para o ML</div>
+        <div class="empty-sub">Busca simultânea em STLFlix, YouTube e Cults3D</div>
       </div>
     </div>
 
@@ -403,16 +402,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         <button class="expand-btn" id="expand-grid-stl" onclick="toggleExpand('grid-stl')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
-      <!-- ML -->
-      <div class="src-section">
-        <div class="src-head">
-          <span class="src-tag t-ml">Mercado Livre BR</span>
-          <span class="src-meta" id="meta-ml">—</span>
-          <div class="src-line"></div>
-        </div>
-        <div class="prod-grid scroll" id="grid-ml"></div>
-      </div>
-
       <!-- YouTube -->
       <div class="src-section">
         <div class="src-head">
@@ -433,11 +422,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         </div>
         <div class="prod-grid scroll collapsed" id="grid-cults"></div>
         <button class="expand-btn" id="expand-grid-cults" onclick="toggleExpand('grid-cults')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
-      </div>
-
-      <div class="export-bar">
-        <button class="btn primary" onclick="copyMiro()">Copiar p/ Miro</button>
-        <button class="btn" onclick="copyBriefing()">Gerar briefing</button>
       </div>
 
     </div>
@@ -1183,7 +1167,7 @@ const SEMANTIC_MAP = {
   'futebol':['soccer ball','sports gear','stadium','goal post','trophy','jersey display','cleat holder'],
   'fidget de futebol':['fidget cube sports','soccer fidget','ball fidget','sports sensory toy','stadium token'],
   'luminaria':['lamp shade voronoi','led diffuser','night light','table lamp','wall sconce','geometric light','moon lamp'],
-  'lamp':['lamp shade','light diffuser','night light','led cover','table lamp base','wall lamp','glow ring'],
+  'lamp':['lamp shade','lamp shade voronoi','led diffuser','night light','table lamp base','wall lamp','glow ring','geometric lamp','mushroom lamp','moon lamp','ambient light','light cover','filament lamp','pendant lamp'],
   'organizer':['desk organizer','cable management','drawer insert','wall grid','monitor riser','headphone stand','pen holder'],
   'suporte':['phone stand','tablet holder','monitor arm','headphone hook','cable clip','wall mount','charging station'],
   'plant':['geometric planter','self-watering pot','wall planter','hanging vase','succulent holder','herb garden','kokedama stand'],
@@ -1196,6 +1180,17 @@ const SEMANTIC_MAP = {
   'keychain':['snap fit keychain','carabiner','token keychain','geometric charm','pill holder keychain'],
   'dragon':['dragon articulated','flexi dragon','dragon bust','dragon egg','dragon dice tower','dragon miniature'],
   'holder':['phone holder','tablet holder','cable holder','key holder','controller holder','headphone holder'],
+  'lamp':['lamp shade voronoi','led diffuser','night light','table lamp','wall lamp','glow ring','geometric lamp','mushroom lamp','moon lamp','ambient light','pendant lamp','filament lamp'],
+  'light':['lamp shade','led strip cover','night light','glow diffuser','ambient lamp','light box','neon sign','led panel frame'],
+  'shelf':['floating shelf','wall shelf','corner shelf','book shelf','display shelf','modular shelf','hex shelf'],
+  'wall':['wall art','wall mount','wall shelf','wall planter','wall hook','wall organizer','gallery frame'],
+  'desk':['desk organizer','desk mat corner','monitor stand','cable management','under desk tray','headphone hook','pen holder'],
+  'cat':['cat toy','cat feeder puzzle','cat wall shelf','cat tunnel','cat scratcher','interactive cat toy','cat treat dispenser'],
+  'dog':['dog bowl stand','dog tag','dog toy','dog feeder','dog collar holder','paw print'],
+  'ring':['geometric ring','signet ring','band ring','statement ring','adjustable ring','minimalist ring','textured ring'],
+  'dice':['dice tower','dice tray','dice box','dice vault','polyhedral dice display','dice jail','dice roller'],
+  'vase':['geometric vase','voronoi vase','minimal vase','spiral vase','organic vase','flower vase','bud vase'],
+  'box':['storage box','snap fit box','hinged box','trinket box','card box','pill box','watch box'],
   'stand':['monitor stand','phone stand','tablet stand','headphone stand','watch stand','guitar stand'],
 };
 
