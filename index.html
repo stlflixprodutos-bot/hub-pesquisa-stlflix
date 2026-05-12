@@ -538,7 +538,7 @@ async function fetchMLItems(term) {
   try {
     // chama direto do browser — sem passar pelo servidor
     // funciona na Vercel pois o domínio é https:// e o ML não bloqueia browsers
-    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(term)}&limit=25&sort=sold_quantity_desc`;
+    const url = `/api/ml?q=${encodeURIComponent(term)}`;
     const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
     if (!r.ok) throw new Error(`ML ${r.status}`);
     const data = await r.json();
@@ -571,17 +571,18 @@ async function fetchMLItems(term) {
   // timeout geral de 10s — mostra o que chegou
   const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
 
-  const [stlItems, mlResult, ytItems] = await Promise.all([
+  const [stlItems, mlResult, ytItems, cultsItems] = await Promise.all([
     wrap(stlPromise, []),
     wrap(mlPromise,  {items:[], term:kw}),
     wrap(ytPromise,  []),
+    wrap(cultsPromise, []),
   ]);
 
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
   lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems };
-  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, csvTotal:csvData.length });
+  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
   show('st-results');
