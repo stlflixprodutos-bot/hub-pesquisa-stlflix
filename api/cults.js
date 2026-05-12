@@ -20,88 +20,84 @@ function toBase64(str) {
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q');
-  const onlyPaid = searchParams.get('paid') !== 'false';
+  const debug = searchParams.get('debug') === '1';
 
-  if (!q) {
-    return new Response(JSON.stringify({ error: 'q is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+  if (!q) return new Response(JSON.stringify({ results: [] }), {
+    status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+  });
+
+  const credentials = toBase64(`${CULTS_USER}:${CULTS_API_KEY}`);
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Basic ${credentials}`,
+    'Accept': 'application/json'
+  };
+
+  // descobre campos reais de Creation e Money
+  if (debug) {
+    const q1 = `{ __type(name:"Creation"){ fields{ name } } }`;
+    const q2 = `{ __type(name:"Money"){ fields{ name } } }`;
+    const [r1, r2] = await Promise.all([
+      fetch('https://cults3d.com/graphql', { method:'POST', headers, body: JSON.stringify({query:q1}) }).then(r=>r.json()),
+      fetch('https://cults3d.com/graphql', { method:'POST', headers, body: JSON.stringify({query:q2}) }).then(r=>r.json()),
+    ]);
+    return new Response(JSON.stringify({
+      creationFields: r1?.data?.__type?.fields?.map(f=>f.name),
+      moneyFields: r2?.data?.__type?.fields?.map(f=>f.name),
+    }), { status:200, headers: { 'Content-Type':'application/json','Access-Control-Allow-Origin':'*' } });
   }
 
-  try {
-    const credentials = toBase64(`${CULTS_USER}:${CULTS_API_KEY}`);
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${credentials}`,
-      'Accept': 'application/json'
-    };
-
-    const gql = `query {
-      creationsSearchBatch(
-        query: ${JSON.stringify(q)},
-        limit: 20,
-        onlyPriced: ${onlyPaid}
-      ) {
-        total
-        results {
-          name
-          slug
-          url
-          illustrationImageUrl
-          downloadsCount
-          likesCount
-          publishedAt
-          free
-          price {
-            amount
-            currency
-          }
-        }
+  const gql = `query {
+    creationsSearchBatch(
+      query: ${JSON.stringify(q)},
+      limit: 20,
+      onlyPriced: true
+    ) {
+      total
+      results {
+        name
+        slug
+        url
+        illustrationImageUrl
+        downloadsCount
+        likesCount
+        publishedAt
+        price { centAmount currencyCode }
       }
-    }`;
+    }
+  }`;
 
+  try {
     const r = await fetch('https://cults3d.com/graphql', {
-      method: 'POST', headers,
-      body: JSON.stringify({ query: gql })
+      method: 'POST', headers, body: JSON.stringify({ query: gql })
     });
     const d = await r.json();
 
     if (d.errors) {
       return new Response(JSON.stringify({ results: [], _debug: { errors: d.errors } }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
 
     const items = d?.data?.creationsSearchBatch?.results || [];
-    const total = d?.data?.creationsSearchBatch?.total || 0;
-
     return new Response(JSON.stringify({
-      total,
+      total: d?.data?.creationsSearchBatch?.total || 0,
       results: items.map(i => ({
-        nome:      i.name || i.slug || '—',
-        preco:     i.price?.amount > 0 ? `$${parseFloat(i.price.amount).toFixed(2)}` : 'Grátis',
+        nome:      i.name || i.slug,
+        preco:     i.price?.centAmount > 0 ? `$${(i.price.centAmount/100).toFixed(2)}` : 'Grátis',
         downloads: i.downloadsCount || 0,
         likes:     i.likesCount || 0,
-        data:      i.publishedAt ? i.publishedAt.substring(0, 10) : '',
+        data:      i.publishedAt ? i.publishedAt.substring(0,10) : '',
         imagem:    i.illustrationImageUrl || '',
         link:      i.url || `https://cults3d.com/en/3d-model/${i.slug}`,
-        free:      i.free
       }))
     }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, s-maxage=120'
-      }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=120' }
     });
-
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message, results: [] }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+  } catch(e) {
+    return new Response(JSON.stringify({ results: [], error: e.message }), {
+      status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   }
 }
