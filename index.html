@@ -38,6 +38,7 @@ body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;
 .c-yt{background:#1a0000;color:var(--red);border-color:#3d0000;}
 .c-cults{background:#1a0010;color:#f472b6;border-color:#3d0028;}
 .t-cults{background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;}
+.t-etsy{background:#1a0800;color:#f56400;border:0.5px solid #3d1800;}
 
 .layout{display:flex;min-height:calc(100vh - 120px);}
 .sidebar{width:180px;flex-shrink:0;background:var(--s);border-right:1px solid var(--b);padding:14px 0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;}
@@ -199,8 +200,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div style="display:flex;gap:2px;">
       <button class="tab-btn active" id="tab-btn-intel" onclick="switchTab('intel',this)">Inteligência</button>
       <button class="tab-btn" id="tab-btn-busca" onclick="switchTab('busca',this)">Busca</button>
-      <button class="tab-btn" id="tab-btn-confluencia" onclick="switchTab('confluencia',this)">Confluências</button>
-      <button class="tab-btn" id="tab-btn-radar" onclick="switchTab('radar',this)">Radar Semanal</button>
     </div>
   </div>
   <div style="display:flex;gap:8px;">
@@ -222,6 +221,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="chip c-ml"  data-src="ml"  onclick="toggleChip(this)">Mercado Livre BR</div>
     <div class="chip c-yt"  data-src="yt"  onclick="toggleChip(this)">YouTube</div>
     <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
+    <div class="chip" data-src="etsy" onclick="toggleChip(this)" style="background:#1a0800;color:#f56400;border:0.5px solid #3d1800;"><span class="chip-dot" style="background:#f56400;"></span>Etsy</div>
   </div>
 </div>
 
@@ -262,7 +262,41 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       </div>
     </div>
 
-    <!-- Nuvem de palavras / termos relacionados -->
+    <!-- Confluências — gaps STLFlix vs Cults -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;">GAPS</span>
+          <span style="font-size:11px;font-weight:500;color:var(--m3);">Oportunidades — produtos que vendem no Cults mas não existem na STLFlix</span>
+        </div>
+        <button class="btn primary" onclick="runGapAnalysis()" style="font-size:10px;padding:4px 12px;">Analisar gaps</button>
+      </div>
+      <div id="gap-results" style="padding:14px 16px;">
+        <div style="color:var(--m2);font-size:11px;">Clique em "Analisar gaps" para cruzar Cults3D com o catálogo STLFlix.</div>
+      </div>
+    </div>
+
+    <!-- Radar de vídeos — player inline -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0000;color:var(--red);border:0.5px solid #3d0000;">YOUTUBE</span>
+          <span style="font-size:11px;font-weight:500;color:var(--m3);">Radar de vídeos — universo maker 3D</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="radar-yt-input" placeholder="tema do radar (ex: fidget, lamp, dragon...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;width:220px;">
+          <button class="btn primary" onclick="runYTRadar()" style="font-size:10px;padding:4px 12px;">Buscar vídeos</button>
+          <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="yt-radar-meta"></span>
+        </div>
+      </div>
+      <div id="yt-radar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--b);">
+        <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">
+          Digite um tema e clique em "Buscar vídeos" para ver os mais assistidos com player inline.
+        </div>
+      </div>
+    </div>
+
+    <!-- Nuvem de palavras -->
     <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
       <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);">
         <span style="font-size:11px;font-weight:500;color:var(--m3);">Explorador de termos — caminhos de pesquisa</span>
@@ -270,13 +304,13 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       </div>
       <div style="padding:14px 16px;">
         <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <input class="search-input" id="word-cloud-input" placeholder="ex: fidget de futebol, luminária monumento, suporte modular..." style="flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;padding:8px 12px;font-size:13px;">
+          <input class="search-input" id="word-cloud-input" placeholder="ex: fidget de futebol, luminária monumento, suporte modular..." style="flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--t);outline:none;">
           <button class="btn primary" onclick="runWordCloud()">Explorar termos</button>
         </div>
         <div id="word-cloud-result" style="display:none;">
           <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;">TERMOS RELACIONADOS — clique para buscar</div>
           <div id="word-cloud-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
-          <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;">UNIVERSOS PARA EXPLORAR NO PINTEREST</div>
+          <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;">ABRIR NO PINTEREST</div>
           <div id="word-cloud-pinterest" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
           <div style="background:var(--lime-bg);border:0.5px solid var(--lime-d);border-radius:8px;padding:10px 14px;">
             <div style="font-size:11px;color:#8aaa30;line-height:1.6;" id="word-cloud-insight"></div>
@@ -285,6 +319,20 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL PLAYER YOUTUBE -->
+<div id="yt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="width:min(860px,95vw);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:12px;color:var(--m3);max-width:700px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="yt-modal-title"></div>
+      <button onclick="closeYTModal()" style="background:transparent;border:0.5px solid var(--b2);color:var(--m2);border-radius:4px;padding:4px 12px;cursor:pointer;font-size:11px;">✕ Fechar</button>
+    </div>
+    <div style="position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;">
+      <iframe id="yt-modal-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:4px;" id="yt-modal-related"></div>
   </div>
 </div>
 
@@ -298,6 +346,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:var(--red)"></div><span class="sb-label">YouTube</span><span class="sb-count" id="cnt-yt">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#f56400;"></div><span class="sb-label">Etsy</span><span class="sb-count" id="cnt-etsy">—</span></div>
   </div>
 
   <div class="main">
@@ -371,6 +420,28 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         <div class="prod-grid scroll" id="grid-cults"></div>
       </div>
 
+      <!-- Etsy -->
+      <div class="src-section" id="sec-etsy">
+        <div class="src-head">
+          <span class="src-tag t-etsy">Etsy</span>
+          <span class="src-meta" id="meta-etsy">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid scroll" id="grid-etsy"></div>
+        <!-- Tags e categorias Etsy -->
+        <div id="etsy-tags-wrap" style="display:none;margin-top:10px;">
+          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">TAGS MAIS COMUNS — clique para explorar</div>
+          <div id="etsy-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;"></div>
+          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">CATEGORIAS</div>
+          <div id="etsy-cats" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a id="etsy-amazon-link" href="#" target="_blank" class="btn" style="font-size:10px;">🔍 Buscar na Amazon USA</a>
+            <a id="etsy-pinterest-link" href="#" target="_blank" class="btn" style="font-size:10px;">📌 Pinterest</a>
+            <a id="etsy-behance-link" href="#" target="_blank" class="btn" style="font-size:10px;">🎨 Behance</a>
+          </div>
+        </div>
+      </div>
+
       <div class="export-bar">
         <button class="btn primary" onclick="copyMiro()">Copiar p/ Miro</button>
         <button class="btn" onclick="copyBriefing()">Gerar briefing</button>
@@ -382,41 +453,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 </div><!-- fim tab-busca -->
 
 <!-- TAB CONFLUÊNCIA -->
-<div class="tab-pane" id="tab-confluencia">
-  <div style="padding:24px;max-width:960px;">
-    <div style="margin-bottom:20px;">
-      <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:4px;">Confluências de mercado</div>
-      <div style="font-size:11px;color:var(--m2);line-height:1.6;">Produtos que aparecem em múltiplas fontes e ainda não existem no catálogo STLFlix. Faça uma busca primeiro e depois clique em Analisar.</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px;">
-      <button class="btn primary" onclick="runConfluence()">Analisar confluências</button>
-      <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="conf-last">faça uma busca primeiro</span>
-    </div>
-    <div id="conf-list"><div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Faça uma busca na aba Busca e depois volte aqui para ver as confluências.</div></div>
-  </div>
-</div>
-
-<!-- TAB RADAR SEMANAL -->
-<div class="tab-pane" id="tab-radar">
-  <div style="padding:24px;max-width:960px;">
-    <div style="margin-bottom:16px;">
-      <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:4px;">Radar Semanal</div>
-      <div style="font-size:11px;color:var(--m2);line-height:1.6;">Monitore temas do universo 3D toda semana. O radar busca sinais de mercado no Mercado Livre e YouTube para cada tema configurado.</div>
-    </div>
-
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;padding:16px;margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:500;color:var(--m3);margin-bottom:12px;">Temas monitorados</div>
-      <div id="radar-themes-list"></div>
-      <button class="btn" style="margin-top:8px;border-style:dashed;color:var(--lime-d);border-color:var(--lime-d);" onclick="addRadarTheme()">+ Adicionar tema</button>
-      <div style="margin-top:14px;display:flex;gap:8px;align-items:center;">
-        <button class="btn primary" onclick="runRadar()">Rodar radar agora</button>
-        <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="radar-last">nunca rodado</span>
-      </div>
-    </div>
-
-    <div id="radar-results"><div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Configure os temas e clique em "Rodar radar" para ver os sinais da semana.</div></div>
-  </div>
-</div>
+<!-- CONFLUENCIA E RADAR MOVIDOS PARA INTEL -->
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
@@ -452,7 +489,7 @@ let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
 let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
 let lastKw    = '';
 let lastRes   = {};
-let activeSet = new Set(['stl','yt','cults']);
+let activeSet = new Set(['stl','yt','cults','etsy']);
 
 // ── TRADUÇÃO ──
 const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
@@ -560,6 +597,62 @@ async function fetchCults(kw) {
   }
 }
 
+// ── FETCH ETSY ──
+async function fetchEtsy(kw) {
+  try {
+    const r = await fetch(`/api/etsy?q=${encodeURIComponent(kw)}&limit=25`, {signal: AbortSignal.timeout(10000)});
+    if (!r.ok) throw new Error(`Etsy ${r.status}`);
+    const d = await r.json();
+
+    // renderiza tags e categorias
+    if (d.allTags?.length || d.allCats?.length) {
+      renderEtsyTags(d.allTags || [], d.allCats || [], kw);
+    }
+
+    return (d.results || [])
+      .sort((a,b) => (b.reviews||0) - (a.reviews||0))
+      .map(p => ({
+        nome:      p.nome,
+        num:       p.reviews ? `${p.reviews.toLocaleString('pt-BR')} favoritos` : '—',
+        numRaw:    p.reviews || 0,
+        data:      '',
+        imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+        link:      p.link,
+        drop:      p.preco || '',
+        tipo:      'etsy'
+      }));
+  } catch(e) {
+    console.warn('Etsy erro:', e.message);
+    return [];
+  }
+}
+
+function renderEtsyTags(tags, cats, kw) {
+  const wrap = document.getElementById('etsy-tags-wrap');
+  const tagsEl = document.getElementById('etsy-tags');
+  const catsEl = document.getElementById('etsy-cats');
+  if (!wrap) return;
+
+  tagsEl.innerHTML = tags.slice(0,30).map(t => `
+    <span style="background:var(--s2);border:0.5px solid #3d1800;border-radius:20px;padding:4px 10px;font-size:10px;color:#f56400;cursor:pointer;"
+      onclick="document.getElementById('kw').value='${t}';doSearch()">
+      ${t}
+    </span>`).join('');
+
+  catsEl.innerHTML = cats.slice(0,15).map(t => `
+    <span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:4px 10px;font-size:10px;color:var(--m2);cursor:pointer;"
+      onclick="document.getElementById('kw').value='${t}';doSearch()">
+      ${t}
+    </span>`).join('');
+
+  // links de pesquisa externas
+  document.getElementById('etsy-amazon-link').href = `https://www.amazon.com/s?k=${encodeURIComponent(kw)}`;
+  document.getElementById('etsy-pinterest-link').href = `https://pinterest.com/search/pins/?q=${encodeURIComponent(kw + ' 3d print')}`;
+  document.getElementById('etsy-behance-link').href = `https://www.behance.net/search/projects/?search=${encodeURIComponent(kw)}`;
+
+  wrap.style.display = 'block';
+}
+
 // ── FETCH YOUTUBE ──
 async function fetchYT(kw) {
   const q = encodeURIComponent(`${kw} 3d print`);
@@ -626,22 +719,26 @@ async function fetchMLItems(term) {
   const cultsPromise = activeSet.has('cults')
     ? fetchCults(kw).catch(()=>[])
     : Promise.resolve([]);
+  const etsyPromise = activeSet.has('etsy')
+    ? fetchEtsy(kw).catch(()=>[])
+    : Promise.resolve([]);
 
   // timeout geral de 10s — mostra o que chegou
   const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
 
-  const [stlItems, mlResult, ytItems, cultsItems] = await Promise.all([
+  const [stlItems, mlResult, ytItems, cultsItems, etsyItems] = await Promise.all([
     wrap(stlPromise, []),
     wrap(mlPromise,  {items:[], term:kw}),
     wrap(ytPromise,  []),
     wrap(cultsPromise, []),
+    wrap(etsyPromise, []),
   ]);
 
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
-  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems };
-  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems, etsy:etsyItems };
+  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, etsy:etsyItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
   show('st-results');
@@ -650,12 +747,13 @@ async function fetchMLItems(term) {
 
 // ── RENDER ──
 function renderAll(kw) {
-  const { stl, ml, mlTerm, yt, cults } = lastRes;
+  const { stl, ml, mlTerm, yt, cults, etsy } = lastRes;
 
   // sidebar
   document.getElementById('cnt-stl').textContent = stl.length;
   document.getElementById('cnt-yt').textContent  = yt.length;
   document.getElementById('cnt-cults').textContent = cults.length;
+  document.getElementById('cnt-etsy').textContent  = etsy.length;
 
   // intel
   document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
@@ -684,6 +782,12 @@ function renderAll(kw) {
   document.getElementById('meta-cults').textContent = cults.length
     ? `${cults.length} modelos pagos · Cults3D`
     : 'sem resultados';
+
+  // Etsy
+  renderGrid('grid-etsy', etsy, 'etsy');
+  document.getElementById('meta-etsy').textContent = etsy.length
+    ? `${etsy.length} produtos · ordenados por favoritos · Etsy`
+    : 'sem resultados — configure a API key do Etsy';
   document.getElementById('meta-yt').textContent = yt.length
     ? `${yt.length} vídeos por views`
     : 'sem resultados';
@@ -837,6 +941,170 @@ function toast(msg) {
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
   setTimeout(()=>t.classList.remove('on'),2500);
 }
+
+// ── GAP ANALYSIS — Cults vs STLFlix ──
+async function runGapAnalysis() {
+  const el = document.getElementById('gap-results');
+  el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Buscando no Cults3D...</div>';
+
+  if (!csvData.length) {
+    el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Importe a planilha STLFlix primeiro.</div>';
+    return;
+  }
+
+  const stlNames = csvData.map(p => (p.nome||'').toLowerCase());
+  const existsInSTL = nome => {
+    const words = nome.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+    return words.some(w => stlNames.some(n => n.includes(w)));
+  };
+
+  // busca múltiplos universos no Cults
+  const universes = ['organizer','lamp','dragon','fidget','plant','pet','keychain','stand'];
+  const term = universes[new Date().getDay() % universes.length];
+
+  try {
+    const r = await fetch(`/api/cults?q=${encodeURIComponent(term)}&paid=true`, {signal: AbortSignal.timeout(10000)});
+    const d = await r.json();
+    const items = (d.results||[]).sort((a,b) => (b.downloads||0)-(a.downloads||0));
+
+    // separa os que têm gap
+    const gaps = items.filter(p => !existsInSTL(p.nome)).slice(0, 10);
+    const exists = items.filter(p => existsInSTL(p.nome)).slice(0, 3);
+
+    if (!gaps.length) {
+      el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Nenhum gap encontrado para este tema.</div>';
+      return;
+    }
+
+    el.innerHTML = `
+      <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;">
+        TEMA: ${term.toUpperCase()} · ${gaps.length} gaps · ${exists.length} já existem na STLFlix
+      </div>
+      <div style="display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;">
+        ${gaps.map((p,i) => `
+          <div style="flex:0 0 150px;min-width:150px;background:var(--s2);border:0.5px solid #3d2000;border-radius:8px;overflow:hidden;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
+            <div style="aspect-ratio:1;overflow:hidden;background:#0a0a0a;position:relative;">
+              ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#333;padding:8px;text-align:center;">${p.nome}</div>`}
+              <span style="position:absolute;top:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>
+            </div>
+            <div style="padding:6px 8px 8px;">
+              <div style="font-size:9px;color:var(--m2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;">${p.nome}</div>
+              <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:#f0a030;">${p.downloads||0}</div>
+              <div style="font-size:7px;color:var(--m);">downloads · ${p.preco||''}</div>
+              <a href="${p.link}" target="_blank" style="font-size:8px;color:#f472b6;display:block;margin-top:3px;">cults3d.com →</a>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:#8aaa30;background:var(--lime-bg);border-radius:6px;padding:8px 12px;border-left:2px solid var(--lime-d);">
+        <strong style="color:var(--lime);">${gaps.length} produtos</strong> vendem bem no Cults3D no universo "<strong style="color:var(--lime);">${term}</strong>" e <strong style="color:var(--lime);">não existem no catálogo STLFlix</strong>. O mais baixado é "<strong style="color:var(--lime);">${gaps[0]?.nome}</strong>" com ${gaps[0]?.downloads||0} downloads.
+      </div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--m2);font-size:11px;">Erro: ${e.message}</div>`;
+  }
+}
+
+// ── RADAR YOUTUBE COM PLAYER INLINE ──
+let ytRadarItems = [];
+
+async function runYTRadar() {
+  const input = document.getElementById('radar-yt-input').value.trim() || 'fidget 3d print';
+  const grid = document.getElementById('yt-radar-grid');
+  const meta = document.getElementById('yt-radar-meta');
+  grid.innerHTML = `<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Buscando vídeos...</div>`;
+
+  try {
+    const q = encodeURIComponent(`${input} 3d print`);
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&order=viewCount&maxResults=24&key=${YT_KEY}`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`YT ${r.status}`);
+    const d = await r.json();
+    if (!d.items?.length) throw new Error('sem resultados');
+
+    // busca stats
+    const ids = d.items.map(v => v.id.videoId).join(',');
+    let sm = {};
+    try {
+      const sr = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_KEY}`, {signal: AbortSignal.timeout(5000)});
+      if (sr.ok) { const sd = await sr.json(); (sd.items||[]).forEach(v => sm[v.id] = v.statistics); }
+    } catch {}
+
+    const fmt = n => n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`;
+    ytRadarItems = d.items.map(v => {
+      const views = parseInt(sm[v.id.videoId]?.viewCount||0);
+      return {
+        id: v.id.videoId,
+        title: v.snippet.title,
+        channel: v.snippet.channelTitle,
+        thumb: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || '',
+        views, viewsFmt: fmt(views),
+        published: v.snippet.publishedAt ? new Date(v.snippet.publishedAt).toLocaleDateString('pt-BR',{month:'short',year:'numeric'}) : ''
+      };
+    }).sort((a,b) => b.views - a.views);
+
+    meta.textContent = `${ytRadarItems.length} vídeos · clique para assistir`;
+
+    grid.innerHTML = ytRadarItems.map((v,i) => `
+      <div style="background:var(--s);cursor:pointer;position:relative;overflow:hidden;" onclick="openYTPlayer(${i})" title="${v.title}">
+        <div style="aspect-ratio:16/9;overflow:hidden;position:relative;background:#0a0a0a;">
+          <img src="${v.thumb}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.opacity='.3'">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;background:rgba(0,0,0,.5);" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+            <div style="width:40px;height:40px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M3 2l10 5-10 5V2z"/></svg>
+            </div>
+          </div>
+          <div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.8);color:#fff;font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:3px;">${v.viewsFmt}</div>
+          ${i<3?`<div style="position:absolute;top:4px;left:4px;background:var(--red);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;">#${i+1}</div>`:''}
+        </div>
+        <div style="padding:6px 8px 8px;border-top:0.5px solid var(--b);">
+          <div style="font-size:9px;color:var(--m2);line-height:1.3;height:26px;overflow:hidden;">${v.title}</div>
+          <div style="font-size:8px;color:var(--m);margin-top:2px;">${v.channel} · ${v.published}</div>
+        </div>
+      </div>`).join('');
+
+  } catch(e) {
+    grid.innerHTML = `<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Erro: ${e.message}</div>`;
+  }
+}
+
+function openYTPlayer(idx) {
+  const v = ytRadarItems[idx];
+  if (!v) return;
+  const modal = document.getElementById('yt-modal');
+  document.getElementById('yt-modal-title').textContent = v.title;
+  document.getElementById('yt-modal-iframe').src = `https://www.youtube.com/embed/${v.id}?autoplay=1`;
+  // miniaturas dos outros vídeos
+  document.getElementById('yt-modal-related').innerHTML = ytRadarItems
+    .filter((_,i) => i !== idx).slice(0,8)
+    .map((rv,i) => `
+      <div style="flex:0 0 120px;cursor:pointer;" onclick="switchYTPlayer(${ytRadarItems.indexOf(rv)})">
+        <img src="${rv.thumb}" style="width:120px;height:68px;object-fit:cover;border-radius:4px;border:0.5px solid var(--b2);" loading="lazy">
+        <div style="font-size:9px;color:var(--m2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:120px;">${rv.title}</div>
+      </div>`).join('');
+  modal.style.display = 'flex';
+}
+
+function switchYTPlayer(idx) {
+  const v = ytRadarItems[idx];
+  if (!v) return;
+  document.getElementById('yt-modal-title').textContent = v.title;
+  document.getElementById('yt-modal-iframe').src = `https://www.youtube.com/embed/${v.id}?autoplay=1`;
+  document.getElementById('yt-modal-related').innerHTML = ytRadarItems
+    .filter((_,i) => i !== idx).slice(0,8)
+    .map(rv => `
+      <div style="flex:0 0 120px;cursor:pointer;" onclick="switchYTPlayer(${ytRadarItems.indexOf(rv)})">
+        <img src="${rv.thumb}" style="width:120px;height:68px;object-fit:cover;border-radius:4px;border:0.5px solid var(--b2);" loading="lazy">
+        <div style="font-size:9px;color:var(--m2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:120px;">${rv.title}</div>
+      </div>`).join('');
+}
+
+function closeYTModal() {
+  document.getElementById('yt-modal').style.display = 'none';
+  document.getElementById('yt-modal-iframe').src = '';
+}
+// fechar modal clicando fora do player
+document.getElementById('yt-modal').addEventListener('click', e => {
+  if (e.target.id === 'yt-modal') closeYTModal();
+});
 
 // ── TABS ──
 function switchTab(name, btn) {
