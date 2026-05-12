@@ -29,15 +29,10 @@ export default async function handler(req) {
     });
   }
 
-  // Primeiro faz uma query de diagnóstico para ver os args de creationsSearchBatch
-  const argsQuery = `{
-    __schema {
-      queryType {
-        fields {
-          name
-          args { name type { name kind ofType { name } } }
-        }
-      }
+  // Primeiro descobre os campos do tipo CreationBatch
+  const fieldsQuery = `{
+    __type(name: "CreationBatch") {
+      fields { name }
     }
   }`;
 
@@ -49,54 +44,63 @@ export default async function handler(req) {
       'Accept': 'application/json'
     };
 
-    // Descobre os argumentos do creationsSearchBatch
-    const argsR = await fetch('https://cults3d.com/graphql', {
+    // descobre campos do CreationBatch
+    const fieldsR = await fetch('https://cults3d.com/graphql', {
       method: 'POST', headers,
-      body: JSON.stringify({ query: argsQuery })
+      body: JSON.stringify({ query: fieldsQuery })
     });
-    const argsData = await argsR.json();
-    const searchField = argsData?.data?.__schema?.queryType?.fields?.find(f => f.name === 'creationsSearchBatch');
-    const argNames = searchField?.args?.map(a => a.name) || [];
+    const fieldsData = await fieldsR.json();
+    const availableFields = fieldsData?.data?.__type?.fields?.map(f => f.name) || [];
 
-    // Monta a query com os args corretos
-    // Tenta variações comuns
-    const queries = [
-      `query { creationsSearchBatch(query: "${q}", page: 1) { name slug price free downloadsCount illustrationImageUrl publishedAt } }`,
-      `query { creationsSearchBatch(q: "${q}", page: 1) { name slug price free downloadsCount illustrationImageUrl publishedAt } }`,
-      `query { creationsSearchBatch(term: "${q}", page: 1) { name slug price free downloadsCount illustrationImageUrl publishedAt } }`,
-      `query { creationsSearchBatch(query: "${q}") { name slug price free downloadsCount illustrationImageUrl publishedAt } }`,
-    ];
+    // campos que queremos, filtrados pelo que existe
+    const wantedFields = ['name','slug','price','free','downloadsCount','illustrationImageUrl','publishedAt','likesCount'];
+    const fields = wantedFields.filter(f => availableFields.includes(f));
+    const fieldsStr = fields.length > 0 ? fields.join('\n            ') : 'name slug price free downloadsCount illustrationImageUrl publishedAt';
 
-    let items = [];
-    let errors = [];
+    const gql = `query {
+      creationsSearchBatch(
+        query: ${JSON.stringify(q)},
+        limit: 20,
+        onlyPriced: ${onlyPaid},
+        sort: DOWNLOADS,
+        direction: DESC
+      ) {
+        ${fieldsStr}
+      }
+    }`;
 
-    for (const gql of queries) {
-      const r = await fetch('https://cults3d.com/graphql', {
-        method: 'POST', headers,
-        body: JSON.stringify({ query: gql })
+    const r = await fetch('https://cults3d.com/graphql', {
+      method: 'POST', headers,
+      body: JSON.stringify({ query: gql })
+    });
+    const d = await r.json();
+
+    if (d.errors) {
+      return new Response(JSON.stringify({ results: [], _debug: { errors: d.errors, availableFields, gql } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
-      const d = await r.json();
-      if (d.errors) { errors.push(d.errors[0]?.message); continue; }
-      const result = d?.data?.creationsSearchBatch;
-      if (result && result.length > 0) { items = result; break; }
     }
 
-    const filtered = onlyPaid ? items.filter(i => !i.free && parseFloat(i.price) > 0) : items;
+    const items = d?.data?.creationsSearchBatch || [];
 
     return new Response(JSON.stringify({
-      results: filtered.map(i => ({
-        nome:      i.name,
-        preco:     parseFloat(i.price) > 0 ? `$${parseFloat(i.price).toFixed(2)}` : 'Grátis',
+      results: items.map(i => ({
+        nome:      i.name || i.slug || '—',
+        preco:     parseFloat(i.price||0) > 0 ? `$${parseFloat(i.price).toFixed(2)}` : 'Grátis',
         downloads: i.downloadsCount || 0,
         data:      i.publishedAt ? i.publishedAt.substring(0, 10) : '',
         imagem:    i.illustrationImageUrl || '',
         link:      `https://cults3d.com/en/3d-model/${i.slug}`,
         free:      i.free
-      })),
-      _debug: { argNames, errors }
+      }))
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=120' }
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, s-maxage=120'
+      }
     });
 
   } catch (e) {
