@@ -15,7 +15,7 @@
   --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
 }
 body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
- 
+
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--lime);letter-spacing:.1em;}
 .logo em{color:var(--m2);font-weight:400;}
@@ -84,14 +84,10 @@ body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;
 
 /* grid normal para STL */
 .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
-.prod-grid.scroll{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;}.prod-grid.collapsed{max-height:340px;overflow:hidden;position:relative;}
+.prod-grid.scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}.prod-grid.collapsed{max-height:340px;overflow:hidden;position:relative;}
 .prod-grid.collapsed::after{content:"";position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,var(--bg));pointer-events:none;}
 .expand-btn:hover{color:var(--t);border-color:var(--b3);}
 /* scroll horizontal para ML e YT */
-.prod-grid.scroll::-webkit-scrollbar{height:4px;}
-.prod-grid.scroll::-webkit-scrollbar-track{background:var(--s2);}
-.prod-grid.scroll::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
-.prod-grid.scroll .prod-card{flex:0 0 140px;min-width:140px;}
 
 .prod-card{background:var(--s);border:0.5px solid var(--b2);border-radius:8px;overflow:hidden;transition:border-color .15s;}
 .prod-card:hover{border-color:var(--b2);}
@@ -895,9 +891,9 @@ async function runGapAnalysis() {
       <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;">
         TEMA: ${term.toUpperCase()} · ${gaps.length} gaps · ${exists.length} já existem na STLFlix
       </div>
-      <div style="display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:8px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">
         ${gaps.map((p,i) => `
-          <div style="flex:0 0 150px;min-width:150px;background:var(--s2);border:0.5px solid #3d2000;border-radius:8px;overflow:hidden;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
+          <div style="background:var(--s2);border:0.5px solid #3d2000;border-radius:8px;overflow:hidden;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
             <div style="aspect-ratio:1;overflow:hidden;background:#0a0a0a;position:relative;">
               ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#333;padding:8px;text-align:center;">${p.nome}</div>`}
               <span style="position:absolute;top:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>
@@ -1044,6 +1040,11 @@ const SEMANTIC_MAP = {
   'gato':['cat toy interactive','cat wall shelf','cat tree bracket','feeder puzzle cat'],
   'rpg':['dice tower','dice tray','miniature base','dungeon terrain','spell token','condition marker','initiative tracker'],
   'dice':['dice tower','dice box','dice tray','dice jail','dice vault','polyhedral dice display'],
+  'dragon':['dragon articulated','flexi dragon','dragon bust','dragon egg','dragon dice tower','dragon miniature','dragon statue','dragon figurine','flying dragon','baby dragon','dragon skull','chinese dragon','western dragon','dragon head','dragon wing'],
+  'flexi':['flexi dragon','flexi snake','flexi cat','flexi fish','articulated flexi','print in place flexi','flexi octopus','flexi turtle','flexi dinosaur'],
+  'articulated':['articulated dragon','articulated snake','articulated fish','print in place','flexi articulated','movable joints','articulated hand','articulated spine'],
+  'fidget':['fidget cube','fidget ring','stress toy','sensory toy','fidget slider','haptic coin','worry stone','click button','fidget chain','anxiety relief','fidget gear','fidget spinner'],
+  'organizer':['desk organizer','cable management','drawer insert','wall grid','monitor riser','headphone stand','pen holder','pencil cup','cord organizer','tray organizer'],
   'anel':['geometric ring','statement ring','band ring','adjustable ring','signet ring'],
   'keychain':['snap fit keychain','carabiner','token keychain','geometric charm','pill holder keychain'],
   'dragon':['dragon articulated','flexi dragon','dragon bust','dragon egg','dragon dice tower','dragon miniature'],
@@ -1062,10 +1063,64 @@ const SEMANTIC_MAP = {
 };
 
 
-function showWordCloudBar(kw) {
+async function showWordCloudBar(kw) {
   const bar = document.getElementById('word-cloud-bar');
+  const tagsEl      = document.getElementById('word-cloud-tags');
+  const pinterestEl = document.getElementById('word-cloud-pinterest');
+  const insightEl   = document.getElementById('word-cloud-insight');
   if (!bar) return;
-  // roda a lógica de termos mas popula a barra, não o painel antigo
+
+  // mostra a barra imediatamente com dicionário local enquanto busca YT
+  const localTerms = getLocalTerms(kw);
+  renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, localTerms, false);
+  bar.style.display = 'block';
+
+  // busca tags reais do YouTube em paralelo
+  try {
+    const q = encodeURIComponent(`${kw} 3d print`);
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&order=viewCount&maxResults=15&key=${YT_KEY}`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(6000)});
+    if (!r.ok) return;
+    const data = await r.json();
+    if (!data.items?.length) return;
+
+    // busca detalhes com tags de cada vídeo
+    const ids = data.items.map(v => v.id.videoId).join(',');
+    const detailR = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${ids}&key=${YT_KEY}`,
+      {signal: AbortSignal.timeout(5000)}
+    );
+    if (!detailR.ok) return;
+    const detail = await detailR.json();
+
+    // extrai e conta frequência de todas as tags
+    const tagCount = {};
+    (detail.items || []).forEach(v => {
+      (v.snippet.tags || []).forEach(tag => {
+        const t = tag.toLowerCase().trim();
+        // filtra tags irrelevantes muito genéricas
+        if (t.length < 3 || t === '3d' || t === 'print' || t === '3d print' || t === kw.toLowerCase()) return;
+        tagCount[t] = (tagCount[t] || 0) + 1;
+      });
+    });
+
+    // ordena por frequência e pega as top 25
+    const ytTerms = Object.entries(tagCount)
+      .sort((a,b) => b[1] - a[1])
+      .slice(0, 25)
+      .map(([tag]) => tag);
+
+    if (ytTerms.length > 0) {
+      // combina com termos locais, priorizando os do YouTube (são reais)
+      const combined = [...new Set([...ytTerms, ...localTerms])].slice(0, 30);
+      renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, combined, true);
+    }
+  } catch(e) {
+    // mantém os termos locais que já estão visíveis
+  }
+}
+
+function getLocalTerms(kw) {
   const input = kw.toLowerCase().trim();
   let terms = SEMANTIC_MAP[input] || [];
   if (!terms.length) {
@@ -1075,32 +1130,28 @@ function showWordCloudBar(kw) {
   }
   terms = [...new Set(terms)];
   if (!terms.length) {
-    terms = [kw+' 3d print',kw+' holder',kw+' stand',kw+' organizer',kw+' modular',kw+' articulated',kw+' geometric',kw+' flexi'];
+    terms = [kw+' 3d print',kw+' holder',kw+' stand',kw+' organizer',kw+' modular',kw+' articulated',kw+' geometric',kw+' flexi',kw+' miniature'];
   }
+  return terms;
+}
 
-  const tagsEl     = document.getElementById('word-cloud-tags');
-  const pinterestEl= document.getElementById('word-cloud-pinterest');
-  const insightEl  = document.getElementById('word-cloud-insight');
-
-  tagsEl.innerHTML = terms.slice(0,20).map(t=>`
+function renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, terms, fromYT) {
+  tagsEl.innerHTML = terms.slice(0,30).map(t=>`
     <span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--m3);cursor:pointer;white-space:nowrap;"
       onmouseover="this.style.borderColor='var(--lime-d)';this.style.color='var(--lime)'"
       onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--m3)'"
       onclick="document.getElementById('kw').value='${t}';doSearch()">
       ${t}</span>`).join('');
 
-  pinterestEl.innerHTML = terms.slice(0,4).map(t=>`
+  pinterestEl.innerHTML = terms.slice(0,5).map(t=>`
     <a href="https://pinterest.com/search/pins/?q=${encodeURIComponent(t+' 3d print')}" target="_blank"
        style="background:#1a0010;border:0.5px solid #3d0028;border-radius:20px;padding:3px 10px;font-size:10px;color:#f472b6;text-decoration:none;white-space:nowrap;">
       📌 ${t}</a>`).join('');
 
-  const hasMatch = !!SEMANTIC_MAP[input];
-  insightEl.textContent = hasMatch
-    ? `"${kw}" → ${terms.length} termos mapeados. Top: ${terms.slice(0,3).join(', ')}.`
-    : `"${kw}" → ${terms.length} variações geradas por proximidade semântica.`;
+  insightEl.textContent = fromYT
+    ? `${terms.length} termos extraídos dos vídeos mais assistidos sobre "${kw}" no YouTube.`
+    : `${terms.length} termos mapeados para "${kw}". Aguardando tags do YouTube...`;
   insightEl.style.display = 'block';
-
-  bar.style.display = 'block';
 }
 
 
