@@ -37,6 +37,8 @@ body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;
 .c-stl{background:var(--lime-bg2);color:var(--lime);border-color:var(--lime-d);}
 .c-ml{background:#0a1600;color:#bde55a;border-color:#2a3d00;}
 .c-yt{background:#1a0000;color:var(--red);border-color:#3d0000;}
+.c-cults{background:#1a0010;color:#f472b6;border-color:#3d0028;}
+.t-cults{background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;}
 
 .layout{display:flex;min-height:calc(100vh - 120px);}
 .sidebar{width:180px;flex-shrink:0;background:var(--s);border-right:1px solid var(--b);padding:14px 0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;}
@@ -220,6 +222,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
     <div class="chip c-ml"  data-src="ml"  onclick="toggleChip(this)">Mercado Livre BR</div>
     <div class="chip c-yt"  data-src="yt"  onclick="toggleChip(this)">YouTube</div>
+    <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
   </div>
 </div>
 
@@ -233,6 +236,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#bde55a"></div><span class="sb-label">Mercado Livre</span><span class="sb-count" id="cnt-ml">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:var(--red)"></div><span class="sb-label">YouTube</span><span class="sb-count" id="cnt-yt">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
   </div>
 
   <div class="main">
@@ -242,7 +246,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       <div class="empty-wrap">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="21" cy="21" r="14" stroke="#555" stroke-width="2"/><path d="M32 32L42 42" stroke="#555" stroke-width="2" stroke-linecap="round"/><path d="M16 21h10M21 16v10" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
         <div class="empty-title">Digite uma palavra-chave para começar</div>
-        <div class="empty-sub">Busca simultânea em STLFlix, Mercado Livre e YouTube<br>com tradução automática para o ML</div>
+        <div class="empty-sub">Busca simultânea em STLFlix, Mercado Livre, YouTube e Cults3D<br>com tradução automática para o ML</div>
       </div>
     </div>
 
@@ -294,6 +298,16 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
           <div class="src-line"></div>
         </div>
         <div class="prod-grid scroll" id="grid-yt"></div>
+      </div>
+
+      <!-- Cults3D -->
+      <div class="src-section">
+        <div class="src-head">
+          <span class="src-tag t-cults">Cults3D</span>
+          <span class="src-meta" id="meta-cults">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid scroll" id="grid-cults"></div>
       </div>
 
       <div class="export-bar">
@@ -377,7 +391,7 @@ let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
 let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
 let lastKw    = '';
 let lastRes   = {};
-let activeSet = new Set(['stl','ml','yt']);
+let activeSet = new Set(['stl','ml','yt','cults']);
 
 // ── TRADUÇÃO ──
 const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
@@ -460,6 +474,29 @@ async function loadSheets() {
 
 // ── FETCH ML ──
 
+
+// ── FETCH CULTS3D ──
+async function fetchCults(kw) {
+  try {
+    const r = await fetch(`/api/cults?q=${encodeURIComponent(kw)}&paid=true`, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`Cults ${r.status}`);
+    const data = await r.json();
+    return (data.results || []).map(p => ({
+      nome:      p.nome,
+      num:       p.downloads ? p.downloads.toLocaleString('pt-BR') : '—',
+      numRaw:    p.downloads || 0,
+      data:      p.data || '',
+      imagem_url: p.imagem || '',
+      link:      p.link,
+      drop:      p.preco || '',
+      tipo:      'cults'
+    }));
+  } catch(e) {
+    console.warn('Cults erro:', e.message);
+    return [];
+  }
+}
+
 // ── FETCH YOUTUBE ──
 async function fetchYT(kw) {
   const q = encodeURIComponent(`${kw} 3d print`);
@@ -525,6 +562,9 @@ async function fetchMLItems(term) {
 
   const ytPromise = !activeSet.has('yt') ? Promise.resolve([]) :
     fetchYT(kw).catch(()=>[]);
+  const cultsPromise = activeSet.has('cults')
+    ? fetchCults(kw).catch(()=>[])
+    : Promise.resolve([]);
 
   // timeout geral de 10s — mostra o que chegou
   const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
@@ -548,12 +588,13 @@ async function fetchMLItems(term) {
 
 // ── RENDER ──
 function renderAll(kw) {
-  const { stl, ml, mlTerm, yt } = lastRes;
+  const { stl, ml, mlTerm, yt, cults } = lastRes;
 
   // sidebar
   document.getElementById('cnt-stl').textContent = stl.length;
   document.getElementById('cnt-ml').textContent  = ml.length;
   document.getElementById('cnt-yt').textContent  = yt.length;
+  document.getElementById('cnt-cults').textContent = cults.length;
 
   // intel
   document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
@@ -576,6 +617,12 @@ function renderAll(kw) {
 
   // YouTube
   renderGrid('grid-yt', yt, 'yt');
+
+  // Cults3D
+  renderGrid('grid-cults', cults, 'cults');
+  document.getElementById('meta-cults').textContent = cults.length
+    ? `${cults.length} modelos pagos · Cults3D`
+    : 'sem resultados';
   document.getElementById('meta-yt').textContent = yt.length
     ? `${yt.length} vídeos por views`
     : 'sem resultados';
