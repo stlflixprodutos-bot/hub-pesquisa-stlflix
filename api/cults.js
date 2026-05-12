@@ -29,13 +29,6 @@ export default async function handler(req) {
     });
   }
 
-  // Primeiro descobre os campos do tipo CreationBatch
-  const fieldsQuery = `{
-    __type(name: "CreationBatch") {
-      fields { name }
-    }
-  }`;
-
   try {
     const credentials = toBase64(`${CULTS_USER}:${CULTS_API_KEY}`);
     const headers = {
@@ -44,28 +37,35 @@ export default async function handler(req) {
       'Accept': 'application/json'
     };
 
-    // descobre campos do CreationBatch
+    // Descobre os campos dentro de results do CreationBatch
+    const fieldsQuery = `{
+      __type(name: "Creation") {
+        fields { name }
+      }
+    }`;
     const fieldsR = await fetch('https://cults3d.com/graphql', {
       method: 'POST', headers,
       body: JSON.stringify({ query: fieldsQuery })
     });
     const fieldsData = await fieldsR.json();
-    const availableFields = fieldsData?.data?.__type?.fields?.map(f => f.name) || [];
+    const creationFields = fieldsData?.data?.__type?.fields?.map(f => f.name) || [];
 
-    // campos que queremos, filtrados pelo que existe
-    const wantedFields = ['name','slug','price','free','downloadsCount','illustrationImageUrl','publishedAt','likesCount'];
-    const fields = wantedFields.filter(f => availableFields.includes(f));
-    const fieldsStr = fields.length > 0 ? fields.join('\n            ') : 'name slug price free downloadsCount illustrationImageUrl publishedAt';
+    // campos que queremos filtrados pelo que existe no tipo Creation
+    const wanted = ['name','slug','price','free','downloadsCount','illustrationImageUrl','publishedAt','likesCount'];
+    const fields = wanted.filter(f => creationFields.includes(f));
+    const fieldsStr = fields.length > 0 ? fields.join(' ') : 'name slug price free downloadsCount illustrationImageUrl publishedAt';
 
+    // busca sem sort — para não errar o enum
     const gql = `query {
       creationsSearchBatch(
         query: ${JSON.stringify(q)},
         limit: 20,
-        onlyPriced: ${onlyPaid},
-        sort: DOWNLOADS,
-        direction: DESC
+        onlyPriced: ${onlyPaid}
       ) {
-        ${fieldsStr}
+        total
+        results {
+          ${fieldsStr}
+        }
       }
     }`;
 
@@ -76,15 +76,17 @@ export default async function handler(req) {
     const d = await r.json();
 
     if (d.errors) {
-      return new Response(JSON.stringify({ results: [], _debug: { errors: d.errors, availableFields, gql } }), {
+      return new Response(JSON.stringify({ results: [], _debug: { errors: d.errors, creationFields } }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
 
-    const items = d?.data?.creationsSearchBatch || [];
+    const items = d?.data?.creationsSearchBatch?.results || [];
+    const total = d?.data?.creationsSearchBatch?.total || 0;
 
     return new Response(JSON.stringify({
+      total,
       results: items.map(i => ({
         nome:      i.name || i.slug || '—',
         preco:     parseFloat(i.price||0) > 0 ? `$${parseFloat(i.price).toFixed(2)}` : 'Grátis',
