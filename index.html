@@ -1428,7 +1428,7 @@ function renderSignal(s) {
     <div class="sig-badges">${(s.badges||[]).map(b=>`<span class="sig-b ${bClass[b]||'sb-val'}">${b}</span>`).join('')}</div>
   </div>`;
 }
-
+ 
 // ── init ──
 document.getElementById('modal-csv').addEventListener('click',e=>{if(e.target.id==='modal-csv')closeModal();});
 
