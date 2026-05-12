@@ -536,11 +536,13 @@ async function search() {
 // ── ML via proxy CORS — necessário quando rodando em domínio externo (Vercel) ──
 async function fetchMLItems(term) {
   try {
-    const r = await fetch(`/api/ml?q=${encodeURIComponent(term)}`, {signal: AbortSignal.timeout(8000)});
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    // chama direto do browser — sem passar pelo servidor
+    // funciona na Vercel pois o domínio é https:// e o ML não bloqueia browsers
+    const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(term)}&limit=25&sort=sold_quantity_desc`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`ML ${r.status}`);
     const data = await r.json();
-    console.log('ML resposta:', JSON.stringify(data).substring(0, 300));
-    if (!data.results) throw new Error('no results — keys: ' + Object.keys(data).join(', '));
+    if (!data.results) throw new Error('no results');
     return data.results.map(p => ({
       nome: p.title,
       num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
@@ -578,7 +580,7 @@ async function fetchMLItems(term) {
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
-  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems };
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems };
   console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
