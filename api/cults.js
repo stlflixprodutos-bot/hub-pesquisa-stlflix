@@ -17,7 +17,6 @@ function toBase64(str) {
   return result;
 }
 
-
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q');
@@ -38,25 +37,6 @@ export default async function handler(req) {
       'Accept': 'application/json'
     };
 
-    // Descobre os campos dentro de results do CreationBatch
-    const fieldsQuery = `{
-      __type(name: "Creation") {
-        fields { name }
-      }
-    }`;
-    const fieldsR = await fetch('https://cults3d.com/graphql', {
-      method: 'POST', headers,
-      body: JSON.stringify({ query: fieldsQuery })
-    });
-    const fieldsData = await fieldsR.json();
-    const creationFields = fieldsData?.data?.__type?.fields?.map(f => f.name) || [];
-
-    // campos que queremos filtrados pelo que existe no tipo Creation
-    const wanted = ['name','slug','price','free','downloadsCount','illustrationImageUrl','publishedAt','likesCount'];
-    const fields = wanted.filter(f => creationFields.includes(f));
-    const fieldsStr = fields.length > 0 ? fields.join(' ') : 'name slug price free downloadsCount illustrationImageUrl publishedAt';
-
-    // busca sem sort — para não errar o enum
     const gql = `query {
       creationsSearchBatch(
         query: ${JSON.stringify(q)},
@@ -65,7 +45,18 @@ export default async function handler(req) {
       ) {
         total
         results {
-          ${fieldsStr}
+          name
+          slug
+          url
+          illustrationImageUrl
+          downloadsCount
+          likesCount
+          publishedAt
+          free
+          price {
+            amount
+            currency
+          }
         }
       }
     }`;
@@ -77,7 +68,7 @@ export default async function handler(req) {
     const d = await r.json();
 
     if (d.errors) {
-      return new Response(JSON.stringify({ results: [], _debug: { errors: d.errors, creationFields } }), {
+      return new Response(JSON.stringify({ results: [], _debug: { errors: d.errors } }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
@@ -90,11 +81,12 @@ export default async function handler(req) {
       total,
       results: items.map(i => ({
         nome:      i.name || i.slug || '—',
-        preco:     parseFloat(i.price||0) > 0 ? `$${parseFloat(i.price).toFixed(2)}` : 'Grátis',
+        preco:     i.price?.amount > 0 ? `$${parseFloat(i.price.amount).toFixed(2)}` : 'Grátis',
         downloads: i.downloadsCount || 0,
+        likes:     i.likesCount || 0,
         data:      i.publishedAt ? i.publishedAt.substring(0, 10) : '',
         imagem:    i.illustrationImageUrl || '',
-        link:      `https://cults3d.com/en/3d-model/${i.slug}`,
+        link:      i.url || `https://cults3d.com/en/3d-model/${i.slug}`,
         free:      i.free
       }))
     }), {
