@@ -1,5 +1,28 @@
 export const config = { runtime: 'edge' };
 
+const CLIENT_ID = '4547631186296426';
+const CLIENT_SECRET = 'VOa39QENrlrlQ1auQ8GqILoskKCPutgG';
+
+let cachedToken = null;
+let tokenExpiry = 0;
+
+async function getToken() {
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+  const r = await fetch('https://api.mercadolibre.com/oauth/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json'
+    },
+    body: `grant_type=client_credentials&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`
+  });
+  if (!r.ok) throw new Error(`Token error: ${r.status}`);
+  const data = await r.json();
+  cachedToken = data.access_token;
+  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  return cachedToken;
+}
+
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q');
@@ -12,18 +35,24 @@ export default async function handler(req) {
   }
 
   try {
+    const token = await getToken();
     const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&limit=25&sort=sold_quantity_desc`;
     const r = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
-        'Referer': 'https://www.mercadolivre.com.br/',
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
       }
     });
 
-    const data = await r.json();
+    if (!r.ok) {
+      const text = await r.text();
+      return new Response(JSON.stringify({ error: `ML ${r.status}`, results: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
+    const data = await r.json();
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
@@ -33,8 +62,8 @@ export default async function handler(req) {
       }
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
+    return new Response(JSON.stringify({ error: e.message, results: [] }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   }
