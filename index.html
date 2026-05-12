@@ -743,6 +743,12 @@ async function fetchMLItems(term) {
 
 // ── RENDER ──
 function renderAll(kw) {
+  // preenche e roda o explorador de termos automaticamente com o termo buscado
+  const wcInput = document.getElementById('word-cloud-input');
+  if (wcInput) {
+    wcInput.value = kw;
+    runWordCloud();
+  }
   const { stl, ml, mlTerm, yt, cults, etsy } = lastRes;
 
   // sidebar
@@ -1428,7 +1434,7 @@ function renderSignal(s) {
     <div class="sig-badges">${(s.badges||[]).map(b=>`<span class="sig-b ${bClass[b]||'sb-val'}">${b}</span>`).join('')}</div>
   </div>`;
 }
- 
+
 // ── init ──
 document.getElementById('modal-csv').addEventListener('click',e=>{if(e.target.id==='modal-csv')closeModal();});
 
