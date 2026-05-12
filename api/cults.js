@@ -16,7 +16,7 @@ function toBase64(str) {
   }
   return result;
 }
- 
+
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q');
