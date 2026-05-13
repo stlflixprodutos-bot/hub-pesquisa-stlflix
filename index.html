@@ -217,6 +217,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
     <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
     <div class="chip" data-src="tv" onclick="toggleChip(this)" style="background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</div>
+    <div class="chip" data-src="etsy" onclick="toggleChip(this)" style="background:#1a0800;color:#f56400;border:0.5px solid #3d1800;">Etsy</div>
   </div>
 </div>
 
@@ -379,6 +380,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#5bc8f5"></div><span class="sb-label">Thingiverse</span><span class="sb-count" id="cnt-tv">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#f56400"></div><span class="sb-label">Etsy</span><span class="sb-count" id="cnt-etsy">—</span></div>
   </div>
 
   <div class="main">
@@ -445,6 +447,21 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         <button class="expand-btn" id="expand-grid-tv" onclick="toggleExpand('grid-tv')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
+      <!-- Etsy -->
+      <div class="src-section" id="sec-etsy">
+        <div class="src-head">
+          <span class="src-tag" style="background:#1a0800;color:#f56400;border:0.5px solid #3d1800;">Etsy</span>
+          <span class="src-meta" id="meta-etsy">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid collapsed" id="grid-etsy"></div>
+        <button class="expand-btn" id="expand-grid-etsy" onclick="toggleExpand('grid-etsy')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
+        <div id="etsy-tags-wrap" style="display:none;margin-top:12px;">
+          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">TAGS MAIS USADAS NO ETSY — clique para buscar</div>
+          <div id="etsy-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -486,7 +503,7 @@ let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
 let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
 let lastKw    = '';
 let lastRes   = {};
-let activeSet = new Set(['stl','cults','tv']);
+let activeSet = new Set(['stl','cults','tv','etsy']);
 
 // ── TRADUÇÃO ──
 const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
@@ -643,22 +660,26 @@ async function fetchMLItems(term) {
   const tvPromise = activeSet.has('tv')
     ? fetchTV(kw).catch(()=>[])
     : Promise.resolve([]);
+  const etsyPromise = activeSet.has('etsy')
+    ? fetchEtsy(kw).catch(()=>[])
+    : Promise.resolve([]);
 
   // timeout geral de 10s — mostra o que chegou
   const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
 
-  const [stlItems, mlResult, ytItems, cultsItems, tvItems] = await Promise.all([
+  const [stlItems, mlResult, ytItems, cultsItems, tvItems, etsyItems] = await Promise.all([
     wrap(stlPromise, []),
     wrap(mlPromise,  {items:[], term:kw}),
     wrap(ytPromise,  []),
     wrap(cultsPromise, []),
     wrap(tvPromise, []),
+    wrap(etsyPromise, []),
   ]);
 
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
-  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:[], cults:cultsItems, tv:tvItems };
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:[], cults:cultsItems, tv:tvItems, etsy:etsyItems };
   console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
@@ -677,16 +698,17 @@ function renderAll(kw) {
     const b = document.getElementById('expand-'+id); if (b) { b.style.display='none'; b.textContent='Ver mais ↓'; }
   });
 
-  const { stl, ml, mlTerm, yt, cults, tv } = lastRes;
+  const { stl, ml, mlTerm, yt, cults, tv, etsy } = lastRes;
 
   // sidebar
   document.getElementById('cnt-stl').textContent = stl.length;
   document.getElementById('cnt-cults').textContent = cults.length;
   if (document.getElementById('cnt-tv')) document.getElementById('cnt-tv').textContent = tv.length;
+  if (document.getElementById('cnt-etsy')) document.getElementById('cnt-etsy').textContent = etsy.length;
 
   // intel
   document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
-  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, tv, cults);
+  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, tv, cults, etsy);
 
   // STLFlix
   renderGrid('grid-stl', stl, 'stl');
@@ -708,6 +730,13 @@ function renderAll(kw) {
     renderGrid('grid-tv', tv, 'tv');
     document.getElementById('meta-tv').textContent = tv.length ? `${tv.length} modelos populares · Thingiverse` : 'sem resultados';
     showExpandBtn('grid-tv', tv.length);
+  }
+
+  // Etsy
+  if (document.getElementById('grid-etsy')) {
+    renderGrid('grid-etsy', etsy, 'etsy');
+    document.getElementById('meta-etsy').textContent = etsy.length ? `${etsy.length} produtos · ordenados por vendas · Etsy` : 'sem resultados';
+    showExpandBtn('grid-etsy', etsy.length);
   }
 }
 
@@ -745,6 +774,42 @@ function renderGrid(id, items, tipo) {
   }).join('');
 }
 
+// ── FETCH ETSY (eHunt API) ──
+async function fetchEtsy(kw) {
+  try {
+    const r = await fetch(`/api/etsy?q=${encodeURIComponent(kw)}&limit=20&sort=sales`, {signal: AbortSignal.timeout(12000)});
+    if (!r.ok) throw new Error(`Etsy ${r.status}`);
+    const d = await r.json();
+
+    // renderiza tags se existirem
+    if (d.allTags?.length) {
+      const tagsEl = document.getElementById('etsy-tags');
+      const wrap = document.getElementById('etsy-tags-wrap');
+      if (tagsEl && wrap) {
+        tagsEl.innerHTML = d.allTags.slice(0,20).map(t =>
+          `<span style="background:var(--s2);border:0.5px solid #3d1800;border-radius:20px;padding:4px 10px;font-size:10px;color:#f56400;cursor:pointer;"
+            onclick="document.getElementById('kw').value='${t}';doSearch()">${t}</span>`
+        ).join('');
+        wrap.style.display = 'block';
+      }
+    }
+
+    return (d.results || []).map(p => ({
+      nome:      p.nome,
+      num:       p.vendas ? `${Number(p.vendas).toLocaleString('pt-BR')} vendas` : p.favoritos ? `${Number(p.favoritos).toLocaleString('pt-BR')} favoritos` : '—',
+      numRaw:    p.vendas || p.favoritos || 0,
+      imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+      link:      p.link,
+      drop:      p.preco || '',
+      tipo:      'etsy',
+      loja:      p.loja || '',
+    }));
+  } catch(e) {
+    console.warn('Etsy erro:', e.message);
+    return [];
+  }
+}
+
 // ── FETCH THINGIVERSE para busca ──
 async function fetchTV(kw) {
   try {
@@ -767,7 +832,7 @@ async function fetchTV(kw) {
 }
 
 // ── INTEL — análise cruzada real ──
-function buildIntel(kw, stl, ml, tv, cults) {
+function buildIntel(kw, stl, ml, tv, cults, etsyData) {
   const lines = [];
 
   // — Volume STLFlix
@@ -802,6 +867,16 @@ function buildIntel(kw, stl, ml, tv, cults) {
     const topTV = [...tv].sort((a,b) => b.numRaw - a.numRaw)[0];
     lines.push(
       `Thingiverse: <strong>${tv.length} modelos populares</strong> — mais curtido: <em>"${topTV.nome}"</em> com <strong>${topTV.num}</strong>.`
+    );
+  }
+
+  // — Etsy — vendas reais
+  if (etsyData && etsyData.length) {
+    const topEtsy = [...etsyData].sort((a,b) => b.numRaw - a.numRaw)[0];
+    const totalVendas = etsyData.reduce((s,p) => s + (p.numRaw||0), 0);
+    lines.push(
+      `Etsy: <strong>${etsyData.length} produtos</strong> — mais vendido: <em>"${topEtsy.nome}"</em> com <strong>${topEtsy.num}</strong>. ` +
+      `Total de vendas na amostra: <strong>${totalVendas.toLocaleString('pt-BR')}</strong>.`
     );
   }
 
