@@ -13,7 +13,7 @@
   --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
   --red:#ff4444;--green:#3ddc84;--blue:#4a9eff;
   --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
-} 
+}
 body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
 
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
@@ -215,7 +215,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
   <div class="chips">
     <span class="chip-label">FONTES</span>
     <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
-    <div class="chip c-yt"  data-src="yt"  onclick="toggleChip(this)">YouTube</div>
     <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
   </div>
 </div>
@@ -350,38 +349,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:12px;" id="trends-grid"></div>
     </div>
 
-    <!-- Linha 5: Radar YouTube -->
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0000;color:var(--red);border:0.5px solid #3d0000;">YOUTUBE</span>
-          <span style="font-size:11px;color:var(--m3);">Vídeos mais assistidos — universo maker 3D</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input id="radar-yt-input" placeholder="tema (fidget, lamp, dragon...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;width:180px;" onkeydown="if(event.key==='Enter')runYTRadar()">
-          <button class="btn primary" onclick="runYTRadar()" style="font-size:10px;padding:4px 12px;">Buscar</button>
-          <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="yt-radar-meta"></span>
-        </div>
-      </div>
-      <div id="yt-radar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--b);">
-        <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Digite um tema e clique em "Buscar".</div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- MODAL PLAYER YOUTUBE -->
-<div id="yt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;align-items:center;justify-content:center;flex-direction:column;">
-  <div style="width:min(860px,95vw);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="font-size:12px;color:var(--m3);max-width:700px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="yt-modal-title"></div>
-      <button onclick="closeYTModal()" style="background:transparent;border:0.5px solid var(--b2);color:var(--m2);border-radius:4px;padding:4px 12px;cursor:pointer;font-size:11px;">✕ Fechar</button>
-    </div>
-    <div style="position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;">
-      <iframe id="yt-modal-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:4px;" id="yt-modal-related"></div>
   </div>
 </div>
 
@@ -409,7 +376,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div id="recent-list"></div>
     <div class="sb-sec" style="margin-top:8px;">Contagem</div>
     <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
-    <div class="sb-item"><div class="sb-dot" style="background:var(--red)"></div><span class="sb-label">YouTube</span><span class="sb-count" id="cnt-yt">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
   </div>
 
@@ -453,17 +419,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         </div>
         <div class="prod-grid collapsed" id="grid-stl"></div>
         <button class="expand-btn" id="expand-grid-stl" onclick="toggleExpand('grid-stl')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
-      </div>
-
-      <!-- YouTube -->
-      <div class="src-section">
-        <div class="src-head">
-          <span class="src-tag t-yt">YouTube</span>
-          <span class="src-meta" id="meta-yt">—</span>
-          <div class="src-line"></div>
-        </div>
-        <div class="prod-grid scroll collapsed" id="grid-yt"></div>
-        <button class="expand-btn" id="expand-grid-yt" onclick="toggleExpand('grid-yt')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
       <!-- Cults3D -->
@@ -511,7 +466,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 <script>
 // ── CONFIG ──
 const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZglpk8yO0E7kZvSNCXB33rSAIUJkGIAKc41D9GdeNWNJYwWg9aTSrwsw4I7lTQPmOHCbwJzD6d1-X/pub?output=csv';
-const YT_KEY    = 'AIzaSyBovJAFLOfyKJPpAMdWJWDhkZOFG2Ck78E';
 const IMG_PROXY = url => url ? `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=300&h=300&fit=cover` : '';
 
 // ── STATE ──
@@ -519,7 +473,7 @@ let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
 let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
 let lastKw    = '';
 let lastRes   = {};
-let activeSet = new Set(['stl','yt','cults']);
+let activeSet = new Set(['stl','cults']);
 
 // ── TRADUÇÃO ──
 const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
@@ -628,25 +582,6 @@ async function fetchCults(kw) {
 }
 
 // ── FETCH YOUTUBE ──
-async function fetchYT(kw) {
-  const q = encodeURIComponent(`${kw} 3d print`);
-  const r = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&order=viewCount&maxResults=12&key=${YT_KEY}`,{signal:AbortSignal.timeout(7000)});
-  if(!r.ok) return [];
-  const d = await r.json();
-  if(!d.items?.length) return [];
-  // stats em paralelo, sem bloquear se falhar
-  let sm = {};
-  try {
-    const ids = d.items.map(v=>v.id.videoId).join(',');
-    const sr = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_KEY}`,{signal:AbortSignal.timeout(5000)});
-    if(sr.ok){ const sd=await sr.json(); (sd.items||[]).forEach(v=>sm[v.id]=v.statistics); }
-  } catch {}
-  const fmt = n => n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`;
-  return d.items.map(v=>{
-    const views = parseInt(sm[v.id.videoId]?.viewCount||0);
-    return { nome:v.snippet.title, num:fmt(views), numRaw:views, imagem_url:v.snippet.thumbnails?.medium?.url||'', link:`https://youtube.com/watch?v=${v.id.videoId}`, drop:v.snippet.channelTitle, tipo:'yt' };
-  }).sort((a,b)=>b.numRaw-a.numRaw);
-}
 
 // ── SEARCH (ponto central) ──
 async function search() {
@@ -688,8 +623,7 @@ async function fetchMLItems(term) {
 
   const mlPromise = Promise.resolve({items:[], term:kw});
 
-  const ytPromise = !activeSet.has('yt') ? Promise.resolve([]) :
-    fetchYT(kw).catch(()=>[]);
+  const ytPromise = Promise.resolve([]);
   const cultsPromise = activeSet.has('cults')
     ? fetchCults(kw).catch(()=>[])
     : Promise.resolve([]);
@@ -707,7 +641,7 @@ async function fetchMLItems(term) {
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
-  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:ytItems, cults:cultsItems };
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:[], cults:cultsItems };
   console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
@@ -730,7 +664,6 @@ function renderAll(kw) {
 
   // sidebar
   document.getElementById('cnt-stl').textContent = stl.length;
-  document.getElementById('cnt-yt').textContent  = yt.length;
   document.getElementById('cnt-cults').textContent = cults.length;
 
   // intel
@@ -746,10 +679,6 @@ function renderAll(kw) {
   }
   showExpandBtn('grid-stl', stl.length);
 
-  // YouTube
-  renderGrid('grid-yt', yt, 'yt');
-  document.getElementById('meta-yt').textContent = yt.length ? `${yt.length} vídeos por views` : 'sem resultados';
-  showExpandBtn('grid-yt', yt.length);
 
   // Cults3D
   renderGrid('grid-cults', cults, 'cults');
@@ -986,103 +915,9 @@ async function runGapAnalysis() {
 }
 
 // ── RADAR YOUTUBE COM PLAYER INLINE ──
-let ytRadarItems = [];
 
-async function runYTRadar() {
-  const input = document.getElementById('radar-yt-input').value.trim() || 'fidget 3d print';
-  const grid = document.getElementById('yt-radar-grid');
-  const meta = document.getElementById('yt-radar-meta');
-  grid.innerHTML = `<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Buscando vídeos...</div>`;
 
-  try {
-    const q = encodeURIComponent(`${input} 3d print`);
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&order=viewCount&maxResults=24&key=${YT_KEY}`;
-    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
-    if (!r.ok) throw new Error(`YT ${r.status}`);
-    const d = await r.json();
-    if (!d.items?.length) throw new Error('sem resultados');
 
-    // busca stats
-    const ids = d.items.map(v => v.id.videoId).join(',');
-    let sm = {};
-    try {
-      const sr = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${ids}&key=${YT_KEY}`, {signal: AbortSignal.timeout(5000)});
-      if (sr.ok) { const sd = await sr.json(); (sd.items||[]).forEach(v => sm[v.id] = v.statistics); }
-    } catch {}
-
-    const fmt = n => n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`;
-    ytRadarItems = d.items.map(v => {
-      const views = parseInt(sm[v.id.videoId]?.viewCount||0);
-      return {
-        id: v.id.videoId,
-        title: v.snippet.title,
-        channel: v.snippet.channelTitle,
-        thumb: v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || '',
-        views, viewsFmt: fmt(views),
-        published: v.snippet.publishedAt ? new Date(v.snippet.publishedAt).toLocaleDateString('pt-BR',{month:'short',year:'numeric'}) : ''
-      };
-    }).sort((a,b) => b.views - a.views);
-
-    meta.textContent = `${ytRadarItems.length} vídeos · clique para assistir`;
-
-    grid.innerHTML = ytRadarItems.map((v,i) => `
-      <div style="background:var(--s);cursor:pointer;position:relative;overflow:hidden;" onclick="openYTPlayer(${i})" title="${v.title}">
-        <div style="aspect-ratio:16/9;overflow:hidden;position:relative;background:#0a0a0a;">
-          <img src="${v.thumb}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.opacity='.3'">
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;background:rgba(0,0,0,.5);" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-            <div style="width:40px;height:40px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="white"><path d="M3 2l10 5-10 5V2z"/></svg>
-            </div>
-          </div>
-          <div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.8);color:#fff;font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:3px;">${v.viewsFmt}</div>
-          ${i<3?`<div style="position:absolute;top:4px;left:4px;background:var(--red);color:#fff;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;">#${i+1}</div>`:''}
-        </div>
-        <div style="padding:6px 8px 8px;border-top:0.5px solid var(--b);">
-          <div style="font-size:9px;color:var(--m2);line-height:1.3;height:26px;overflow:hidden;">${v.title}</div>
-          <div style="font-size:8px;color:var(--m);margin-top:2px;">${v.channel} · ${v.published}</div>
-        </div>
-      </div>`).join('');
-
-  } catch(e) {
-    grid.innerHTML = `<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Erro: ${e.message}</div>`;
-  }
-}
-
-function openYTPlayer(idx) {
-  const v = ytRadarItems[idx];
-  if (!v) return;
-  const modal = document.getElementById('yt-modal');
-  document.getElementById('yt-modal-title').textContent = v.title;
-  document.getElementById('yt-modal-iframe').src = `https://www.youtube.com/embed/${v.id}?autoplay=1`;
-  // miniaturas dos outros vídeos
-  document.getElementById('yt-modal-related').innerHTML = ytRadarItems
-    .filter((_,i) => i !== idx).slice(0,8)
-    .map((rv,i) => `
-      <div style="flex:0 0 120px;cursor:pointer;" onclick="switchYTPlayer(${ytRadarItems.indexOf(rv)})">
-        <img src="${rv.thumb}" style="width:120px;height:68px;object-fit:cover;border-radius:4px;border:0.5px solid var(--b2);" loading="lazy">
-        <div style="font-size:9px;color:var(--m2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:120px;">${rv.title}</div>
-      </div>`).join('');
-  modal.style.display = 'flex';
-}
-
-function switchYTPlayer(idx) {
-  const v = ytRadarItems[idx];
-  if (!v) return;
-  document.getElementById('yt-modal-title').textContent = v.title;
-  document.getElementById('yt-modal-iframe').src = `https://www.youtube.com/embed/${v.id}?autoplay=1`;
-  document.getElementById('yt-modal-related').innerHTML = ytRadarItems
-    .filter((_,i) => i !== idx).slice(0,8)
-    .map(rv => `
-      <div style="flex:0 0 120px;cursor:pointer;" onclick="switchYTPlayer(${ytRadarItems.indexOf(rv)})">
-        <img src="${rv.thumb}" style="width:120px;height:68px;object-fit:cover;border-radius:4px;border:0.5px solid var(--b2);" loading="lazy">
-        <div style="font-size:9px;color:var(--m2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:120px;">${rv.title}</div>
-      </div>`).join('');
-}
-
-function closeYTModal() {
-  document.getElementById('yt-modal').style.display = 'none';
-  document.getElementById('yt-modal-iframe').src = '';
-}
 // fechar modal clicando fora do player
 document.getElementById('yt-modal').addEventListener('click', e => {
   if (e.target.id === 'yt-modal') closeYTModal();
@@ -1134,66 +969,22 @@ const SEMANTIC_MAP = {
 };
 
 
-let _lastWCKw = '';
-async function showWordCloudBar(kw) {
+
+function showWordCloudBar(kw) {
   const bar = document.getElementById('wc-bar');
   const tagsEl      = document.getElementById('wc-bar-tags');
   const pinterestEl = document.getElementById('wc-bar-pinterest');
   const insightEl   = document.getElementById('wc-bar-insight');
   if (!bar) return;
 
-  // evita re-renderizar se o termo não mudou
-  if (kw === _lastWCKw) return;
-  _lastWCKw = kw;
-
-  // mostra a barra imediatamente com dicionário local enquanto busca YT
   const localTerms = getLocalTerms(kw);
-  renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, localTerms, false);
+
+  // combina termos locais com títulos dos vídeos do YouTube já buscados
+  let combined = localTerms;
+
+
+  renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, combined, false);
   bar.style.display = 'block';
-
-  // busca tags reais do YouTube em paralelo
-  try {
-    const q = encodeURIComponent(`${kw} 3d print`);
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&type=video&order=viewCount&maxResults=15&key=${YT_KEY}`;
-    const r = await fetch(url, {signal: AbortSignal.timeout(6000)});
-    if (!r.ok) return;
-    const data = await r.json();
-    if (!data.items?.length) return;
-
-    // busca detalhes com tags de cada vídeo
-    const ids = data.items.map(v => v.id.videoId).join(',');
-    const detailR = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${ids}&key=${YT_KEY}`,
-      {signal: AbortSignal.timeout(5000)}
-    );
-    if (!detailR.ok) return;
-    const detail = await detailR.json();
-
-    // extrai e conta frequência de todas as tags
-    const tagCount = {};
-    (detail.items || []).forEach(v => {
-      (v.snippet.tags || []).forEach(tag => {
-        const t = tag.toLowerCase().trim();
-        // filtra tags irrelevantes muito genéricas
-        if (t.length < 3 || t === '3d' || t === 'print' || t === '3d print' || t === kw.toLowerCase()) return;
-        tagCount[t] = (tagCount[t] || 0) + 1;
-      });
-    });
-
-    // ordena por frequência e pega as top 25
-    const ytTerms = Object.entries(tagCount)
-      .sort((a,b) => b[1] - a[1])
-      .slice(0, 25)
-      .map(([tag]) => tag);
-
-    if (ytTerms.length > 0) {
-      // combina com termos locais, priorizando os do YouTube (são reais)
-      const combined = [...new Set([...ytTerms, ...localTerms])].slice(0, 30);
-      renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, combined, true);
-    }
-  } catch(e) {
-    // mantém os termos locais que já estão visíveis
-  }
 }
 
 function getLocalTerms(kw) {
