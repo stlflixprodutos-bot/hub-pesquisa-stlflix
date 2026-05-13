@@ -47,10 +47,14 @@ export default async function handler(req) {
     }), { status:200, headers: { 'Content-Type':'application/json','Access-Control-Allow-Origin':'*' } });
   }
 
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 2);
+  const cutoffStr = cutoff.toISOString().substring(0,10);
+
   const gql = `query {
     creationsSearchBatch(
       query: ${JSON.stringify(q)},
-      limit: 20,
+      limit: 50,
       onlyPriced: true
     ) {
       total
@@ -80,17 +84,37 @@ export default async function handler(req) {
     }
 
     const items = d?.data?.creationsSearchBatch?.results || [];
+
+    // filtra apenas produtos publicados nos últimos 2 anos
+    const recent = items.filter(i => {
+      if (!i.publishedAt) return false;
+      return i.publishedAt.substring(0,10) >= cutoffStr;
+    });
+
+    // se filtro deixar muito poucos, relaxa para 3 anos
+    const filtered = recent.length >= 5 ? recent : items.filter(i => {
+      if (!i.publishedAt) return true;
+      const threeyears = new Date();
+      threeyears.setFullYear(threeyears.getFullYear() - 3);
+      return i.publishedAt.substring(0,10) >= threeyears.toISOString().substring(0,10);
+    });
+
     return new Response(JSON.stringify({
       total: d?.data?.creationsSearchBatch?.total || 0,
-      results: items.map(i => ({
-        nome:      i.name || i.slug,
-        preco:     i.price?.formatted || (i.price?.cents > 0 ? `$${(i.price.cents/100).toFixed(2)}` : 'Grátis'),
-        downloads: i.downloadsCount || 0,
-        likes:     i.likesCount || 0,
-        data:      i.publishedAt ? i.publishedAt.substring(0,10) : '',
-        imagem:    i.illustrationImageUrl || '',
-        link:      i.url || `https://cults3d.com/en/3d-model/${i.slug}`,
-      }))
+      results: filtered.map(i => {
+        const imgUrl = i.illustrationImageUrl || '';
+        const isVideo = imgUrl.includes('.mp4') || imgUrl.includes('videos.cults3d');
+        const cents = i.price?.cents || 0;
+        return {
+          nome:      i.name || i.slug,
+          preco:     cents > 0 ? `$${(cents / 100 * 1.08).toFixed(2)}` : 'Free',
+          downloads: i.downloadsCount || 0,
+          likes:     i.likesCount || 0,
+          data:      i.publishedAt ? i.publishedAt.substring(0,10) : '',
+          imagem:    isVideo ? '' : imgUrl,
+          link:      i.url || `https://cults3d.com/en/3d-model/${i.slug}`,
+        };
+      })
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=120' }
