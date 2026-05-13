@@ -231,8 +231,8 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         <div style="font-size:11px;color:var(--m2);" id="intel-date">Carregando...</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <span style="font-size:10px;color:var(--m);">Período:</span>
-        <select id="intel-period" onchange="runIntelDashboard()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;cursor:pointer;">
+        <span style="font-size:10px;color:var(--m);" title="Afeta apenas a análise de sazonalidade STLFlix">Período sazonalidade:</span>
+        <select id="intel-period" onchange="renderSeasonality()" title="Filtro de período — aplica somente ao gráfico de sazonalidade STLFlix. Cults e Thingiverse são ordenados por popularidade histórica." style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;cursor:pointer;">
           <option value="7">Últimos 7 dias</option>
           <option value="30" selected>Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
@@ -1134,12 +1134,17 @@ const SEMANTIC_MAP = {
 };
 
 
+let _lastWCKw = '';
 async function showWordCloudBar(kw) {
   const bar = document.getElementById('wc-bar');
   const tagsEl      = document.getElementById('wc-bar-tags');
   const pinterestEl = document.getElementById('wc-bar-pinterest');
   const insightEl   = document.getElementById('wc-bar-insight');
   if (!bar) return;
+
+  // evita re-renderizar se o termo não mudou
+  if (kw === _lastWCKw) return;
+  _lastWCKw = kw;
 
   // mostra a barra imediatamente com dicionário local enquanto busca YT
   const localTerms = getLocalTerms(kw);
