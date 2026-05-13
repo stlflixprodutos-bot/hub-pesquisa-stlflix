@@ -358,18 +358,12 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 <div class="tab-pane" id="tab-busca"></div>
 
 <!-- Explorador de termos — abaixo dos chips -->
-<div id="wc-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:10px 24px;display:none;">
-  <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-    <div style="flex:1;min-width:0;">
-      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;margin-bottom:6px;">🔍 APROFUNDE NO PINTEREST E CULTS — clique num termo para buscar</div>
-      <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
-    </div>
-    <div style="flex-shrink:0;">
-      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:#f472b6;letter-spacing:.08em;margin-bottom:6px;">📌 ABRIR NO PINTEREST</div>
-      <div id="wc-bar-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
-    </div>
+<div id="wc-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:12px 24px;display:none;">
+  <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;margin-bottom:8px;">
+    🔍 TERMOS RELACIONADOS — clique para buscar no Cults · 📌 = abre no Pinterest
   </div>
-  <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;margin-top:6px;line-height:1.5;display:none;"></div>
+  <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"></div>
+  <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;margin-top:4px;line-height:1.5;"></div>
 </div>
 
 <div class="layout">
@@ -456,10 +450,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         </div>
         <div class="prod-grid collapsed" id="grid-etsy"></div>
         <button class="expand-btn" id="expand-grid-etsy" onclick="toggleExpand('grid-etsy')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
-        <div id="etsy-tags-wrap" style="display:none;margin-top:12px;">
-          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">TAGS MAIS USADAS NO ETSY — clique para buscar</div>
-          <div id="etsy-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
-        </div>
+
       </div>
 
     </div>
@@ -785,15 +776,7 @@ async function fetchEtsy(kw) {
     // guarda tags globalmente para usar na barra de termos
     if (d.allTags?.length) {
       lastEtsyTags = d.allTags;
-      const tagsEl = document.getElementById('etsy-tags');
-      const wrap = document.getElementById('etsy-tags-wrap');
-      if (tagsEl && wrap) {
-        tagsEl.innerHTML = d.allTags.slice(0,20).map(t =>
-          `<span style="background:var(--s2);border:0.5px solid #3d1800;border-radius:20px;padding:4px 10px;font-size:10px;color:#f56400;cursor:pointer;"
-            onclick="document.getElementById('kw').value='${t}';doSearch()">${t}</span>`
-        ).join('');
-        wrap.style.display = 'block';
-      }
+      // tags salvas globalmente — serão usadas na barra de termos via showWordCloudBar
     }
 
     return (d.results || []).map(p => ({
@@ -1117,7 +1100,7 @@ const SEMANTIC_MAP = {
 function showWordCloudBar(kw) {
   const bar = document.getElementById('wc-bar');
   const tagsEl      = document.getElementById('wc-bar-tags');
-  const pinterestEl = document.getElementById('wc-bar-pinterest');
+  const pinterestEl = null;
   const insightEl   = document.getElementById('wc-bar-insight');
   if (!bar) return;
 
@@ -1147,31 +1130,31 @@ function getLocalTerms(kw) {
 }
 
 function renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, terms, fromEtsy) {
-  // separa tags do Etsy (primeiras, em laranja) das locais (resto, em verde)
   const etsyCount = fromEtsy ? Math.min(lastEtsyTags.length, terms.length) : 0;
 
-  tagsEl.innerHTML = terms.slice(0,40).map((t,i) => {
+  // Cada tag tem: clique no texto = busca no hub, botão 📌 = abre Pinterest
+  tagsEl.innerHTML = terms.slice(0,40).map((t, i) => {
     const isEtsy = fromEtsy && i < etsyCount;
-    const color = isEtsy ? '#f56400' : 'var(--lime)';
-    const border = isEtsy ? '#3d1800' : 'var(--lime-d)';
-    const bg = isEtsy ? '#1a0800' : 'var(--lime-bg)';
-    return `<span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--m3);cursor:pointer;white-space:nowrap;"
-      onmouseover="this.style.borderColor='${border}';this.style.color='${color}'"
-      onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--m3)'"
-      onclick="document.getElementById('kw').value='${t}';doSearch()">
-      ${t}${isEtsy ? ' <span style="font-size:8px;opacity:.6;">etsy</span>' : ''}</span>`;
+    const accentColor = isEtsy ? '#f56400' : 'var(--lime)';
+    const accentBorder = isEtsy ? '#3d1800' : 'var(--lime-d)';
+    const pinterestUrl = `https://pinterest.com/search/pins/?q=${encodeURIComponent(t + ' 3d print')}`;
+    return `<span style="display:inline-flex;align-items:center;gap:0;background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;overflow:hidden;font-size:10px;white-space:nowrap;">
+      <span style="padding:4px 8px 4px 10px;color:var(--m3);cursor:pointer;"
+        onmouseover="this.style.color='${accentColor}'"
+        onmouseout="this.style.color='var(--m3)'"
+        onclick="document.getElementById('kw').value='${t}';doSearch()">${t}${isEtsy ? ' <span style="font-size:7px;opacity:.5;">etsy</span>' : ''}</span><a href="${pinterestUrl}" target="_blank"
+        style="padding:4px 8px 4px 6px;color:#f472b6;text-decoration:none;border-left:0.5px solid var(--b2);font-size:10px;"
+        title="Buscar no Pinterest: ${t} 3d print"
+        onmouseover="this.style.background='#1a0010'"
+        onmouseout="this.style.background='transparent'">📌</a>
+    </span>`;
   }).join('');
 
-  // mais links Pinterest — até 8, misturando etsy tags e termos locais
-  pinterestEl.innerHTML = terms.slice(0,8).map(t=>`
-    <a href="https://pinterest.com/search/pins/?q=${encodeURIComponent(t+' 3d print')}" target="_blank"
-       style="background:#1a0010;border:0.5px solid #3d0028;border-radius:20px;padding:3px 10px;font-size:10px;color:#f472b6;text-decoration:none;white-space:nowrap;">
-      📌 ${t}</a>`).join('');
+  // limpar pinterestEl pois não usamos mais separado
+  if (pinterestEl) pinterestEl.innerHTML = '';
 
-  insightEl.textContent = fromEtsy
-    ? `${etsyCount} tags reais do Etsy + ${terms.length - etsyCount} termos semânticos — ${terms.length} caminhos para pesquisar no Pinterest e Cults.`
-    : `${terms.length} termos mapeados para "${kw}".`;
-  insightEl.style.display = 'block';
+  const src = fromEtsy ? `${etsyCount} tags do Etsy + ${terms.length - etsyCount} termos semânticos` : `${terms.length} termos semânticos`;
+  insightEl.textContent = `${src} — clique no termo para buscar no hub · 📌 para abrir no Pinterest.`;
 }
 
 
