@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{ 
+:root{
   --bg:#090909;--s:#111;--s2:#161616;--b:#1e1e1e;--b2:#2a2a2a;
   --t:#e0e0d8;--m:#444;--m2:#777;--m3:#aaa;
   --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
@@ -227,12 +227,12 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div>
         <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:3px;">Central de Inteligência</div>
-        <div style="font-size:11px;color:var(--m2);" id="intel-date">Analisando dados da planilha STLFlix e Cults3D...</div>
+        <div style="font-size:11px;color:var(--m2);" id="intel-date">Clique em "Atualizar análise" para começar.</div>
       </div>
       <button class="btn primary" onclick="runIntelDashboard()">Atualizar análise</button>
     </div>
 
-    <!-- Categorias STLFlix em alta -->
+    <!-- Categorias STLFlix -->
     <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
       <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:10px;">
         <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);">STLFlix</span>
@@ -243,35 +243,40 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       </div>
     </div>
 
-    <!-- Cults em ascensão -->
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;">Cults3D</span>
-          <span style="font-size:11px;font-weight:500;color:var(--m3);">Modelos pagos em ascensão esta semana</span>
+    <!-- Cults em ascensão + Gaps lado a lado -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+
+      <!-- Cults -->
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;">Cults3D</span>
+            <span style="font-size:11px;color:var(--m3);">Em ascensão</span>
+          </div>
+          <span style="font-size:10px;color:var(--m);" id="cults-ascend-meta">—</span>
         </div>
-        <span style="font-size:10px;color:var(--m);" id="cults-ascend-meta">—</span>
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;" id="intel-cults-grid">
+          <div style="color:var(--m2);font-size:11px;padding:8px;grid-column:1/-1;">Clique em "Atualizar análise".</div>
+        </div>
       </div>
-      <div class="prod-grid scroll" style="padding:12px 16px;" id="intel-cults-grid">
-        <div style="color:var(--m2);font-size:11px;padding:8px;">Clique em "Atualizar análise" para carregar.</div>
+
+      <!-- Gaps -->
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;">GAPS</span>
+            <span style="font-size:11px;color:var(--m3);">Ausentes na STLFlix</span>
+          </div>
+          <button class="btn" onclick="runGapAnalysis()" style="font-size:10px;padding:3px 10px;">Analisar</button>
+        </div>
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;" id="gap-results">
+          <div style="color:var(--m2);font-size:11px;padding:8px;grid-column:1/-1;">Clique em "Analisar" para cruzar Cults com o catálogo STLFlix.</div>
+        </div>
       </div>
+
     </div>
 
-    <!-- Confluências — gaps STLFlix vs Cults -->
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;">GAPS</span>
-          <span style="font-size:11px;font-weight:500;color:var(--m3);">Oportunidades — produtos que vendem no Cults mas não existem na STLFlix</span>
-        </div>
-        <button class="btn primary" onclick="runGapAnalysis()" style="font-size:10px;padding:4px 12px;">Analisar gaps</button>
-      </div>
-      <div id="gap-results" style="padding:14px 16px;">
-        <div style="color:var(--m2);font-size:11px;">Clique em "Analisar gaps" para cruzar Cults3D com o catálogo STLFlix.</div>
-      </div>
-    </div>
-
-    <!-- Radar de vídeos — player inline -->
+    <!-- Radar YouTube -->
     <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
       <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:10px;">
@@ -279,37 +284,14 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
           <span style="font-size:11px;font-weight:500;color:var(--m3);">Radar de vídeos — universo maker 3D</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input id="radar-yt-input" placeholder="tema do radar (ex: fidget, lamp, dragon...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;width:220px;">
+          <input id="radar-yt-input" placeholder="tema (ex: fidget, lamp, dragon...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;width:200px;" onkeydown="if(event.key==='Enter')runYTRadar()">
           <button class="btn primary" onclick="runYTRadar()" style="font-size:10px;padding:4px 12px;">Buscar vídeos</button>
           <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="yt-radar-meta"></span>
         </div>
       </div>
       <div id="yt-radar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--b);">
         <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">
-          Digite um tema e clique em "Buscar vídeos" para ver os mais assistidos com player inline.
-        </div>
-      </div>
-    </div>
-
-    <!-- Nuvem de palavras -->
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);">
-        <span style="font-size:11px;font-weight:500;color:var(--m3);">Explorador de termos — caminhos de pesquisa</span>
-        <div style="font-size:10px;color:var(--m);margin-top:3px;">Digite um produto e descubra termos relacionados para explorar no Pinterest e Cults</div>
-      </div>
-      <div style="padding:14px 16px;">
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <input class="search-input" id="word-cloud-input" placeholder="ex: fidget de futebol, luminária monumento, suporte modular..." style="flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--t);outline:none;">
-          <button class="btn primary" onclick="runWordCloud()">Explorar termos</button>
-        </div>
-        <div id="word-cloud-result" style="display:none;">
-          <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;">TERMOS RELACIONADOS — clique para buscar</div>
-          <div id="word-cloud-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
-          <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;">ABRIR NO PINTEREST</div>
-          <div id="word-cloud-pinterest" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
-          <div style="background:var(--lime-bg);border:0.5px solid var(--lime-d);border-radius:8px;padding:10px 14px;">
-            <div style="font-size:11px;color:#8aaa30;line-height:1.6;" id="word-cloud-insight"></div>
-          </div>
+          Digite um tema e clique em "Buscar vídeos".
         </div>
       </div>
     </div>
@@ -335,13 +317,13 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 <div class="tab-pane" id="tab-busca"></div>
 
 <!-- Explorador de termos — abaixo dos chips -->
-<div id="word-cloud-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:10px 24px;display:none;">
+<div id="wc-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:10px 24px;display:none;">
   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
     <span style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;white-space:nowrap;">TERMOS RELACIONADOS</span>
-    <div id="word-cloud-tags" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;"></div>
-    <div id="word-cloud-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;"></div>
+    <div id="wc-bar-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
   </div>
-  <div id="word-cloud-insight" style="font-size:10px;color:#8aaa30;margin-top:6px;line-height:1.5;display:none;"></div>
+  <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;margin-top:6px;line-height:1.5;display:none;"></div>
 </div>
 
 <div class="layout">
@@ -887,11 +869,8 @@ async function runGapAnalysis() {
       return;
     }
 
-    el.innerHTML = `
-      <div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;">
-        TEMA: ${term.toUpperCase()} · ${gaps.length} gaps · ${exists.length} já existem na STLFlix
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;">
+    el.innerHTML = `<div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;grid-column:1/-1;">TEMA: ${term.toUpperCase()} · ${gaps.length} gaps</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:10px;">
         ${gaps.map((p,i) => `
           <div style="background:var(--s2);border:0.5px solid #3d2000;border-radius:8px;overflow:hidden;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
             <div style="aspect-ratio:1;overflow:hidden;background:#0a0a0a;position:relative;">
@@ -1064,10 +1043,10 @@ const SEMANTIC_MAP = {
 
 
 async function showWordCloudBar(kw) {
-  const bar = document.getElementById('word-cloud-bar');
-  const tagsEl      = document.getElementById('word-cloud-tags');
-  const pinterestEl = document.getElementById('word-cloud-pinterest');
-  const insightEl   = document.getElementById('word-cloud-insight');
+  const bar = document.getElementById('wc-bar');
+  const tagsEl      = document.getElementById('wc-bar-tags');
+  const pinterestEl = document.getElementById('wc-bar-pinterest');
+  const insightEl   = document.getElementById('wc-bar-insight');
   if (!bar) return;
 
   // mostra a barra imediatamente com dicionário local enquanto busca YT
@@ -1258,7 +1237,7 @@ function runWordCloud() {
     terms = [input+' 3d print',input+' maker',input+' miniature',input+' organizer',input+' holder',input+' modular',input+' geometric',input+' articulated'];
   }
   const tagsEl = document.getElementById('word-cloud-tags');
-  const pinterestEl = document.getElementById('word-cloud-pinterest');
+  const pinterestEl = document.getElementById('wc-bar-pinterest');
   const insightEl = document.getElementById('word-cloud-insight');
   tagsEl.innerHTML = terms.map(t=>`
     <span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--m3);cursor:pointer;"
