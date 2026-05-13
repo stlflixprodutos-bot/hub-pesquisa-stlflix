@@ -1,61 +1,1626 @@
-export const config = { runtime: 'edge' };
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub de Pesquisa · STLFlix</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090909;--s:#111;--s2:#161616;--b:#1e1e1e;--b2:#2a2a2a;
+  --t:#e0e0d8;--m:#444;--m2:#777;--m3:#aaa;
+  --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
+  --red:#ff4444;--green:#3ddc84;--blue:#4a9eff;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
+}
+body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
 
-const EHUNT_TOKEN = 'vip_c9c806a535ee14225efcb2816093f9d523175c0ecc4748ea';
+.topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--lime);letter-spacing:.1em;}
+.logo em{color:var(--m2);font-weight:400;}
 
-// sort_by: 1=listed_time, 2=reviews, 3=favorites, 4=sales_total, 5=price, 6=sales_weekly
-export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get('q');
-  const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
-  const sortBy = parseInt(searchParams.get('sort_by') || '4');
+.search-wrap{padding:20px 24px 16px;background:var(--s);border-bottom:1px solid var(--b);}
+.search-row{display:flex;gap:10px;margin-bottom:12px;}
+.search-field{flex:1;display:flex;background:var(--s2);border:1px solid var(--b2);border-radius:8px;overflow:hidden;transition:border-color .15s;}
+.search-field:focus-within{border-color:var(--lime-d);}
+.search-input{flex:1;background:transparent;border:none;outline:none;color:var(--t);font-family:var(--sans);font-size:15px;padding:10px 16px;}
+.search-input::placeholder{color:var(--m);}
+.search-go{background:var(--lime);border:none;color:#080808;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;padding:0 22px;cursor:pointer;}
+.search-go:hover{opacity:.85;}
+.search-go:disabled{background:var(--lime-bg2);color:var(--lime-d);cursor:not-allowed;}
 
-  if (!q) return new Response(JSON.stringify({ results: [], allTags: [] }), {
-    status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-  });
+.chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.chip-label{font-family:var(--mono);font-size:8px;color:var(--m);letter-spacing:.1em;margin-right:4px;}
+.chip{font-family:var(--mono);font-size:9px;font-weight:700;padding:4px 12px;border-radius:20px;border:0.5px solid;cursor:pointer;user-select:none;transition:opacity .15s;}
+.chip.off{opacity:.25;filter:grayscale(1);}
+.c-stl{background:var(--lime-bg2);color:var(--lime);border-color:var(--lime-d);}
+.c-yt{background:#1a0000;color:var(--red);border-color:#3d0000;}
+.c-cults{background:#1a0010;color:#f472b6;border-color:#3d0028;}
+.t-cults{background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;}
 
+.layout{display:flex;min-height:calc(100vh - 120px);}
+.sidebar{width:180px;flex-shrink:0;background:var(--s);border-right:1px solid var(--b);padding:14px 0;position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;}
+.sb-sec{padding:10px 14px 4px;font-family:var(--mono);font-size:8px;letter-spacing:.12em;color:var(--m);text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;border-left:2px solid transparent;}
+.sb-item:hover{background:var(--s2);}
+.sb-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.sb-label{font-size:11px;color:var(--m2);}
+.sb-count{margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--m);background:var(--s2);padding:1px 6px;border-radius:3px;}
+.sb-item.recent{cursor:pointer;}
+.sb-item.recent:hover .sb-label{color:var(--t);}
+
+.main{flex:1;min-width:0;padding:20px 24px;}
+
+/* estados */
+.state{display:none;}.state.on{display:block;}
+.empty-wrap{text-align:center;padding:60px 20px;}
+.empty-wrap svg{opacity:.15;margin-bottom:16px;}
+.empty-title{font-size:14px;font-weight:500;color:var(--m3);margin-bottom:6px;}
+.empty-sub{font-size:12px;color:var(--m2);line-height:1.6;}
+
+.loading-wrap{padding:40px 20px;text-align:center;}
+.dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--lime-d);animation:pulse 1.2s ease-in-out infinite;}
+.dot:nth-child(2){animation-delay:.2s;}.dot:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+.loading-txt{font-family:var(--mono);font-size:10px;color:var(--m2);letter-spacing:.08em;}
+
+/* resultados */
+.intel{background:var(--lime-bg);border:0.5px solid var(--lime-d);border-radius:10px;padding:14px 16px;margin-bottom:16px;}
+.intel-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.intel-badge{font-family:var(--mono);font-size:8px;font-weight:700;background:var(--lime);color:#080808;padding:2px 8px;border-radius:3px;}
+.intel-kw{font-size:11px;color:var(--lime-d);}
+.intel-body{font-size:11px;color:#8aaa30;line-height:1.65;}
+.intel-body strong{color:var(--lime);}
+
+.src-section{margin-bottom:20px;}
+.src-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.src-tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 10px;border-radius:3px;text-transform:uppercase;flex-shrink:0;}
+.t-stl{background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);}
+.t-yt{background:#1a0000;color:var(--red);border:0.5px solid #3d0000;}
+.src-meta{font-size:10px;color:var(--m2);}
+.src-line{flex:1;height:.5px;background:var(--b);}
+
+/* grid normal para STL */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.prod-grid.scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}.prod-grid.collapsed{max-height:340px;overflow:hidden;position:relative;}
+.prod-grid.collapsed::after{content:"";position:absolute;bottom:0;left:0;right:0;height:80px;background:linear-gradient(transparent,var(--bg));pointer-events:none;}
+.expand-btn:hover{color:var(--t);border-color:var(--b3);}
+/* scroll horizontal para ML e YT */
+
+.prod-card{background:var(--s);border:0.5px solid var(--b2);border-radius:8px;overflow:hidden;transition:border-color .15s;}
+.prod-card:hover{border-color:var(--b2);}
+.prod-card.top{border-color:var(--lime);}
+.prod-img{aspect-ratio:1;background:#080808;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;}
+.prod-img img{width:100%;height:100%;object-fit:cover;}
+.prod-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#2a2a2a;text-align:center;padding:8px;line-height:1.3;}
+.prod-badge{position:absolute;top:4px;left:4px;font-family:var(--mono);font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;background:var(--lime);color:#080808;}
+.prod-foot{padding:6px 8px 8px;border-top:0.5px solid var(--b);}
+.prod-name{font-size:9px;color:var(--m2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+.prod-num{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--t);line-height:1;}
+.prod-card.top .prod-num{color:var(--lime);}
+.prod-sub{font-size:7px;color:var(--m);letter-spacing:.04em;margin-top:1px;}
+.prod-drop{font-size:8px;color:var(--lime-d);margin-top:1px;}
+.prod-link{font-size:8px;color:var(--blue);display:block;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none;}
+.prod-link:hover{text-decoration:underline;}
+
+.no-results{padding:14px;font-size:11px;color:var(--m);text-align:center;}
+
+/* export bar */
+.export-bar{display:flex;gap:8px;padding:14px 0;border-top:0.5px solid var(--b);margin-top:8px;flex-wrap:wrap;}
+.btn{font-family:var(--sans);font-size:11px;padding:6px 14px;border-radius:6px;cursor:pointer;border:0.5px solid var(--b2);background:transparent;color:var(--m2);transition:all .15s;}
+.btn:hover{border-color:#444;color:var(--t);}
+.btn.primary{background:var(--lime-bg2);border-color:var(--lime-d);color:var(--lime);}
+.btn.primary:hover{background:var(--lime-bg);}
+
+/* toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--lime);color:#080808;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;padding:10px 18px;border-radius:6px;transform:translateY(60px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;}
+.toast.on{transform:translateY(0);opacity:1;}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;}
+.modal-bg.on{display:flex;}
+.modal{background:var(--s);border:0.5px solid var(--b2);border-radius:12px;width:500px;max-width:95vw;padding:24px;}
+.modal-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--lime);text-transform:uppercase;margin-bottom:16px;}
+.mf{margin-bottom:12px;}
+.ml{font-size:10px;color:var(--m2);font-family:var(--mono);letter-spacing:.06em;display:block;margin-bottom:5px;}
+.mi{width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:12px;padding:8px 12px;outline:none;transition:border-color .15s;}
+.mi:focus{border-color:var(--lime-d);}
+textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:10px;}
+.ma{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.mb{font-family:var(--sans);font-size:12px;padding:7px 16px;border-radius:6px;cursor:pointer;border:0.5px solid var(--b2);background:transparent;color:var(--m2);}
+.tab-btn{font-family:var(--sans);font-size:11px;padding:5px 14px;border-radius:4px;border:none;background:transparent;color:var(--m2);cursor:pointer;transition:all .15s;}
+.tab-btn:hover{color:var(--t);background:var(--s2);}
+.tab-btn.active{background:var(--lime-bg);color:var(--lime);}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
+
+.conf-card{background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;margin-bottom:10px;transition:border-color .15s;}
+.conf-card.high{border-color:var(--lime);}
+.conf-card.mid{border-color:#3d2500;}
+.conf-head{padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.conf-head:hover{background:var(--s2);}
+.conf-score{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0;}
+.score-high{background:var(--lime-bg2);color:var(--lime);border:1.5px solid var(--lime-d);}
+.score-mid{background:#1a0e00;color:#f0a030;border:1.5px solid #3d2500;}
+.score-low{background:var(--s2);color:var(--m2);border:1.5px solid var(--b2);}
+.conf-info{flex:1;}
+.conf-name{font-size:13px;font-weight:500;color:var(--t);margin-bottom:5px;}
+.conf-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.ct{font-size:9px;font-family:var(--mono);font-weight:700;padding:2px 7px;border-radius:3px;}
+.ct-stl{background:var(--lime-bg);color:var(--lime);border:0.5px solid var(--lime-d);}
+.ct-ml{background:#0a1600;color:#bde55a;border:0.5px solid #2a3d00;}
+.ct-yt{background:#1a0000;color:var(--red);border:0.5px solid #3d0000;}
+.ct-gap{background:#1a0800;color:#f56400;border:0.5px solid #3d1800;}
+.conf-body{padding:0 16px 14px;border-top:0.5px solid var(--b);display:none;}
+.conf-body.open{display:block;padding-top:12px;}
+.conf-detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px;}
+.conf-detail-cell{background:var(--s2);border-radius:6px;padding:8px 10px;}
+.conf-detail-src{font-size:8px;font-family:var(--mono);color:var(--m);letter-spacing:.06em;margin-bottom:3px;}
+.conf-detail-val{font-size:13px;font-weight:500;color:var(--t);font-family:var(--mono);}
+.conf-detail-label{font-size:8px;color:var(--m);}
+.conf-insight{font-size:11px;color:#8aaa30;line-height:1.6;background:var(--lime-bg);border-radius:6px;padding:8px 12px;border-left:2px solid var(--lime-d);}
+.conf-insight strong{color:var(--lime);}
+
+.radar-theme-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.radar-theme-input{flex:1;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:12px;padding:7px 10px;outline:none;}
+.radar-theme-input:focus{border-color:var(--lime-d);}
+.radar-remove{background:transparent;border:none;color:var(--m);cursor:pointer;font-size:16px;padding:0 4px;line-height:1;}
+.radar-remove:hover{color:var(--red);}
+.radar-section{margin-bottom:20px;}
+.radar-sec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.radar-sec-tag{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 10px;border-radius:3px;text-transform:uppercase;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);}
+.radar-sec-line{flex:1;height:.5px;background:var(--b);}
+.signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.signal-card{background:var(--s);border:0.5px solid var(--b2);border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color .15s;}
+.signal-card:hover{border-color:var(--b2);}
+.signal-card.hot{border-color:#f0a030;}
+.signal-card.new-sig{border-color:var(--lime);}
+.signal-theme{font-size:8px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:5px;text-transform:uppercase;}
+.signal-title{font-size:12px;font-weight:500;color:var(--t);margin-bottom:4px;line-height:1.4;}
+.signal-meta{font-size:10px;color:var(--m2);margin-bottom:6px;}
+.signal-num{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--lime);}
+.signal-unit{font-size:8px;color:var(--lime-d);}
+.sig-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.sig-b{font-size:8px;padding:2px 6px;border-radius:3px;font-family:var(--mono);}
+.sb-hot{background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;}
+.sb-new{background:var(--lime-bg);color:var(--lime);border:0.5px solid var(--lime-d);}
+.sb-gap{background:#150900;color:#f56400;border:0.5px solid #3d1800;}
+.sb-val{background:var(--green-bg,#00150a);color:var(--green,#3ddc84);border:0.5px solid #003d1a;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="logo">Hub de Pesquisa <em>/ STLFlix</em></div>
+    <div style="display:flex;gap:2px;">
+      <button class="tab-btn active" id="tab-btn-intel" onclick="switchTab('intel',this)">Inteligência</button>
+      <button class="tab-btn" id="tab-btn-busca" onclick="switchTab('busca',this)">Busca</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="openCSV()">Importar CSV</button>
+    <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="downloadTemplate()">Template CSV</button>
+  </div>
+</div>
+
+<div class="search-wrap" id="search-wrap">
+  <div class="search-row">
+    <div class="search-field">
+      <input class="search-input" id="kw" placeholder="ex: dice tower, cable organizer, plant pot, flexi dragon..." onkeydown="if(event.key==='Enter')search()">
+      <button class="search-go" id="go-btn" onclick="search()">BUSCAR</button>
+    </div>
+  </div>
+  <div class="chips">
+    <span class="chip-label">FONTES</span>
+    <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
+    <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
+    <div class="chip" data-src="tv" onclick="toggleChip(this)" style="background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</div>
+    <div class="chip" data-src="etsy" onclick="toggleChip(this)" style="background:#1a0800;color:#f56400;border:0.5px solid #3d1800;">Etsy</div>
+  </div>
+</div>
+
+<!-- TAB INTELIGÊNCIA -->
+<div class="tab-pane active" id="tab-intel">
+  <div style="padding:20px 24px;max-width:1200px;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:3px;">Central de Inteligência</div>
+        <div style="font-size:11px;color:var(--m2);" id="intel-date">Carregando...</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:10px;color:var(--m);" title="Afeta apenas a análise de sazonalidade STLFlix">Período sazonalidade:</span>
+        <select id="intel-period" onchange="renderSeasonality()" title="Filtro de período — aplica somente ao gráfico de sazonalidade STLFlix. Cults e Thingiverse são ordenados por popularidade histórica." style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;cursor:pointer;">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="365">Todo 2026</option>
+        </select>
+        <button class="btn primary" onclick="runIntelDashboard()">↺ Atualizar</button>
+      </div>
+    </div>
+
+    <!-- Linha 1: Categorias STLFlix + Sazonalidade -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+
+      <!-- Categorias por subcategoria real -->
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);">STLFlix</span>
+          <span style="font-size:11px;font-weight:500;color:var(--m3);">Subcategorias — volume de downloads</span>
+        </div>
+        <div style="padding:14px 16px;max-height:320px;overflow-y:auto;" id="intel-categories">
+          <div style="color:var(--m2);font-size:11px;">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- Sazonalidade — gráfico de linha -->
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#001a10;color:#3ddc84;border:0.5px solid #003d1a;">SAZONALIDADE</span>
+            <span style="font-size:11px;color:var(--m3);">Downloads STLFlix por mês · catálogo 2026</span>
+          </div>
+          <select id="season-cat" onchange="renderSeasonality()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:4px;color:var(--t);font-family:var(--sans);font-size:10px;padding:3px 8px;outline:none;cursor:pointer;">
+            <option value="all">Todas</option>
+            <option value="toys">Toys & Tabletop</option>
+            <option value="gadgets">Gadgets</option>
+            <option value="household">Household</option>
+            <option value="seasonal">Seasonal</option>
+            <option value="art">Art</option>
+            <option value="costume">Costume & Accessories</option>
+          </select>
+        </div>
+        <div style="padding:14px 16px;" id="seasonality-chart">
+          <div style="color:var(--m2);font-size:11px;">Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Linha 2: Cults em ascensão + Gaps -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;">Cults3D</span>
+            <span style="font-size:11px;color:var(--m3);">Modelos pagos em alta</span>
+          </div>
+          <span style="font-size:10px;color:var(--m);" id="cults-ascend-meta">—</span>
+        </div>
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;" id="intel-cults-grid">
+          <div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>
+        </div>
+      </div>
+
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;">GAPS</span>
+            <span style="font-size:11px;color:var(--m3);">Vendem no Cults · ausentes na STLFlix</span>
+          </div>
+          <span style="font-size:10px;color:var(--m);" id="gap-meta">—</span>
+        </div>
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;" id="gap-results">
+          <div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Linha 3: Thingiverse por categoria -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</span>
+          <span style="font-size:11px;color:var(--m3);">Mais populares por categoria — gaps funcionais</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <select id="tv-cat" onchange="loadThingiverse()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;cursor:pointer;">
+            <option value="organizer">Organizer</option>
+            <option value="fidget">Fidget</option>
+            <option value="desk organizer">Desk Organizer</option>
+            <option value="lamp shade">Lamp</option>
+            <option value="dice tower">Dice Tower</option>
+            <option value="articulated">Articulated</option>
+            <option value="plant pot">Plant Pot</option>
+            <option value="pet">Pet</option>
+            <option value="keychain">Keychain</option>
+            <option value="miniature">Miniature</option>
+            <option value="cable management">Cable Management</option>
+            <option value="phone stand">Phone Stand</option>
+          </select>
+          <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="tv-meta">—</span>
+        </div>
+      </div>
+      <div id="tv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:12px;">
+        <div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:20px;">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- Linha 4: Google Trends — links diretos -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0f00;color:#fbbc04;border:0.5px solid #3d2800;">Google Trends</span>
+        <span style="font-size:11px;color:var(--m3);">Tendências por categoria — EUA, Europa e Brasil</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:12px;" id="trends-grid"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TAB BUSCA -->
+<div class="tab-pane" id="tab-busca"></div>
+
+<!-- Explorador de termos — abaixo dos chips -->
+<div id="wc-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:10px 24px;display:none;">
+  <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;margin-bottom:6px;">🔍 APROFUNDE NO PINTEREST E CULTS — clique num termo para buscar</div>
+      <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+    <div style="flex-shrink:0;">
+      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:#f472b6;letter-spacing:.08em;margin-bottom:6px;">📌 ABRIR NO PINTEREST</div>
+      <div id="wc-bar-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+  </div>
+  <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;margin-top:6px;line-height:1.5;display:none;"></div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-sec">Buscas recentes</div>
+    <div id="recent-list"></div>
+    <div class="sb-sec" style="margin-top:8px;">Contagem</div>
+    <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#5bc8f5"></div><span class="sb-label">Thingiverse</span><span class="sb-count" id="cnt-tv">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#f56400"></div><span class="sb-label">Etsy</span><span class="sb-count" id="cnt-etsy">—</span></div>
+  </div>
+
+  <div class="main">
+
+    <!-- EMPTY -->
+    <div class="state on" id="st-empty">
+      <div class="empty-wrap">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="21" cy="21" r="14" stroke="#555" stroke-width="2"/><path d="M32 32L42 42" stroke="#555" stroke-width="2" stroke-linecap="round"/><path d="M16 21h10M21 16v10" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
+        <div class="empty-title">Digite uma palavra-chave para começar</div>
+        <div class="empty-sub">Busca simultânea em STLFlix e Cults3D</div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="state" id="st-loading">
+      <div class="loading-wrap">
+        <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="loading-txt" id="load-txt">BUSCANDO...</div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="state" id="st-results">
+
+      <!-- Intel -->
+      <div class="intel" id="intel-block">
+        <div class="intel-head">
+          <span class="intel-badge">INTEL</span>
+          <span class="intel-kw" id="intel-kw">—</span>
+        </div>
+        <div class="intel-body" id="intel-body">—</div>
+      </div>
+
+      <!-- STLFlix -->
+      <div class="src-section">
+        <div class="src-head">
+          <span class="src-tag t-stl">STLFlix</span>
+          <span class="src-meta" id="meta-stl">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid collapsed" id="grid-stl"></div>
+        <button class="expand-btn" id="expand-grid-stl" onclick="toggleExpand('grid-stl')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
+      </div>
+
+      <!-- Cults3D -->
+      <div class="src-section">
+        <div class="src-head">
+          <span class="src-tag t-cults">Cults3D</span>
+          <span class="src-meta" id="meta-cults">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid collapsed" id="grid-cults"></div>
+        <button class="expand-btn" id="expand-grid-cults" onclick="toggleExpand('grid-cults')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
+      </div>
+
+      <!-- Thingiverse -->
+      <div class="src-section" id="sec-tv">
+        <div class="src-head">
+          <span class="src-tag" style="background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</span>
+          <span class="src-meta" id="meta-tv">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid collapsed" id="grid-tv"></div>
+        <button class="expand-btn" id="expand-grid-tv" onclick="toggleExpand('grid-tv')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
+      </div>
+
+      <!-- Etsy -->
+      <div class="src-section" id="sec-etsy">
+        <div class="src-head">
+          <span class="src-tag" style="background:#1a0800;color:#f56400;border:0.5px solid #3d1800;">Etsy</span>
+          <span class="src-meta" id="meta-etsy">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid collapsed" id="grid-etsy"></div>
+        <button class="expand-btn" id="expand-grid-etsy" onclick="toggleExpand('grid-etsy')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
+        <div id="etsy-tags-wrap" style="display:none;margin-top:12px;">
+          <div style="font-size:9px;font-family:var(--mono);color:var(--m);letter-spacing:.08em;margin-bottom:6px;">TAGS MAIS USADAS NO ETSY — clique para buscar</div>
+          <div id="etsy-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div><!-- fim tab-busca -->
+
+<!-- TAB CONFLUÊNCIA -->
+<!-- CONFLUENCIA E RADAR MOVIDOS PARA INTEL -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Modal CSV -->
+<div class="modal-bg" id="modal-csv">
+  <div class="modal">
+    <div class="modal-title">Importar planilha STLFlix</div>
+    <div class="mf">
+      <label class="ml">Arquivo CSV</label>
+      <input type="file" accept=".csv" onchange="loadFile(this)" style="color:var(--m2);font-size:11px;display:block;margin-bottom:8px;">
+    </div>
+    <div class="mf">
+      <label class="ml">Ou cole o conteúdo CSV aqui</label>
+      <textarea class="mi" id="csv-txt" placeholder="mes,product_id,drop_name,product_name,total_downloads&#10;2026-01-01,3614,DROP #292,Hoodie - Can Holder,1571"></textarea>
+    </div>
+    <div style="font-size:10px;color:var(--m);line-height:1.6;">Colunas esperadas: <code style="font-family:var(--mono);background:var(--s2);padding:1px 5px;border-radius:3px;font-size:9px;">mes, product_id, drop_name, product_name, total_downloads</code></div>
+    <div class="ma">
+      <button class="mb" onclick="closeModal()">Cancelar</button>
+      <button class="mb ok" onclick="importCSV()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZglpk8yO0E7kZvSNCXB33rSAIUJkGIAKc41D9GdeNWNJYwWg9aTSrwsw4I7lTQPmOHCbwJzD6d1-X/pub?output=csv';
+const IMG_PROXY = url => url ? `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=300&h=300&fit=cover` : '';
+
+// ── STATE ──
+let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
+let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
+let lastKw    = '';
+let lastRes   = {};
+let activeSet = new Set(['stl','cults','tv','etsy']);
+
+// ── TRADUÇÃO ──
+const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
+
+const tCache = JSON.parse(localStorage.getItem('stlflix_tr') || '{}');
+
+async function translate(kw) {
+  const k = kw.toLowerCase().trim();
+  if (tCache[k]) return tCache[k];
+  // dicionário exato
+  if (DICT[k]) { tCache[k]=DICT[k]; save('stlflix_tr',tCache); return DICT[k]; }
+  // parcial
+  for (const [en,pt] of Object.entries(DICT)) {
+    if (k.includes(en)) { const t=k.replace(en,pt); tCache[k]=t; save('stlflix_tr',tCache); return t; }
+  }
+  // já é pt
+  if (/\b(suporte|organizador|porta|caixa|gancho|vaso|planta|gato|cachorro|dado|torre|brinquedo|caneta|fone|celular|prateleira|luminária)\b/i.test(kw)) return kw;
+  // google translate grátis
   try {
-    const r = await fetch('https://api.ehunt.ai/api/v1/items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-VIP-TOKEN': EHUNT_TOKEN },
-      body: JSON.stringify({ search_key: q, sort_by: sortBy, desc: 1, page_num: 1, page_size: limit }),
-      signal: AbortSignal.timeout(12000)
-    });
-
+    const r = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(kw)}`,{signal:AbortSignal.timeout(3000)});
+    if (!r.ok) throw 0;
     const d = await r.json();
-    if (d.code !== 0 && d.code !== 200) {
-      return new Response(JSON.stringify({ results: [], error: d.msg || d.message, code: d.code }), {
-        status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
-    }
+    const t = d?.[0]?.[0]?.[0] || kw;
+    tCache[k]=t; save('stlflix_tr',tCache); return t;
+  } catch { return kw; }
+}
 
-    const items = d.data?.list || [];
-    const results = items.map(item => ({
-      nome:          item.title || '',
-      vendas:        item.sales_total || 0,
-      vendas_semana: item.sales_weekly || 0,
-      favoritos:     item.favorites || 0,
-      reviews:       item.reviews || 0,
-      preco:         item.price ? `$${parseFloat(item.price).toFixed(2)}` : '—',
-      imagem:        item.logo_url || '',
-      link:          item.product_url || '',
-      loja:          item.store_name || '',
-      bestsell:      item.is_bestsell === 1,
-      tags:          item.tags ? item.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-    }));
+// ── CSV PARSE ──
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if (lines.length < 2) return [];
+  const norm = s => s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  const header = splitLine(lines[0]).map(norm);
+  const idx = (...aliases) => { for(const a of aliases){ const i=header.indexOf(norm(a)); if(i>=0)return i; } return -1; };
+  const iName = idx('product_name','nome','name','title','produto');
+  const iDl   = idx('total_downloads','downloads','download','dl');
+  const iDrop = idx('drop_name','drop','colecao','collection');
+  const iDate = idx('mes','data','date');
+  const iId   = idx('product_id','id');
+  return lines.slice(1).map(line => {
+    const cols = splitLine(line);
+    const g = i => i>=0 ? cols[i]?.replace(/^"|"$/g,'').trim()||'' : '';
+    const name = g(iName); if(!name) return null;
+    const dl = parseInt(g(iDl).replace(/\./g,'').replace(',','.')) || 0;
+    const id = g(iId);
+    return { nome:name, num:dl?dl.toLocaleString('pt-BR'):'—', numRaw:dl, data:g(iDate), drop:g(iDrop), link:`https://platform.stlflix.com/pt-BR/explore?search=${encodeURIComponent(name)}`, tipo:'stl' };
+  }).filter(Boolean);
+}
+function splitLine(line) {
+  const cols=[]; let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+    else if(c===','&&!inQ){cols.push(cur);cur='';}
+    else cur+=c;
+  }
+  cols.push(cur); return cols;
+}
 
-    const allTags = [...new Set(results.flatMap(r => r.tags))].slice(0, 30);
-
-    return new Response(JSON.stringify({
-      results, allTags,
-      total: d.data?.product_num || results.length,
-      credits_remaining: d.remaining_today
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=120' }
-    });
+// ── LOAD SHEETS ──
+async function loadSheets() {
+  if (csvData.length && Date.now()-csvTs < 10*60*1000) return;
+  try {
+    // usa a função serverless da própria Vercel — sem CORS, sem proxy externo
+    const r = await fetch('/api/sheets', {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`${r.status}`);
+    const text = await r.text();
+    if (!text.includes(',') || text.length < 50) throw new Error('empty');
+    const rows = parseCSV(text);
+    if (!rows.length) throw new Error('no rows');
+    csvData = rows;
+    csvTs = Date.now();
+    save('stlflix_csv', csvData);
+    save('stlflix_csv_ts', csvTs);
+    console.log(`Planilha carregada: ${rows.length} produtos`);
   } catch(e) {
-    return new Response(JSON.stringify({ results: [], error: e.message }), {
-      status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+    console.warn('Planilha erro:', e.message, '— usando cache local se disponível');
   }
 }
+
+// ── FETCH ML ──
+
+
+// ── FETCH CULTS3D ──
+async function fetchCults(kw) {
+  try {
+    const r = await fetch(`/api/cults?q=${encodeURIComponent(kw)}&paid=true`, {signal: AbortSignal.timeout(10000)});
+    if (!r.ok) throw new Error(`Cults ${r.status}`);
+    const data = await r.json();
+    return (data.results || [])
+      .sort((a,b) => (b.downloads||0) - (a.downloads||0))
+      .map(p => ({
+        nome:      p.nome,
+        num:       p.downloads ? p.downloads.toLocaleString('pt-BR') : '—',
+        numRaw:    p.downloads || 0,
+        data:      p.data || '',
+        imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+        link:      p.link,
+        drop:      p.preco || '',
+        tipo:      'cults'
+      }));
+  } catch(e) {
+    console.warn('Cults erro:', e.message);
+    return [];
+  }
+}
+
+// ── FETCH YOUTUBE ──
+
+// ── SEARCH (ponto central) ──
+async function search() {
+  const kw = document.getElementById('kw').value.trim();
+  if (!kw) return;
+  lastKw = kw;
+  addRecent(kw);
+  show('st-loading');
+  document.getElementById('go-btn').disabled = true;
+
+  // ── dispara STL, ML e YouTube em PARALELO ──
+  const stlPromise = !activeSet.has('stl') ? Promise.resolve([]) :
+    loadSheets()
+      .catch(()=>{})
+      .then(()=>{ const q=kw.toLowerCase(); return csvData.filter(r=>r.nome&&r.nome.toLowerCase().includes(q)).slice(0,50); });
+
+// ── ML via proxy CORS — necessário quando rodando em domínio externo (Vercel) ──
+async function fetchMLItems(term) {
+  try {
+    // chama direto do browser — sem passar pelo servidor
+    // funciona na Vercel pois o domínio é https:// e o ML não bloqueia browsers
+    const url = `/api/ml?q=${encodeURIComponent(term)}`;
+    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    if (!r.ok) throw new Error(`ML ${r.status}`);
+    const data = await r.json();
+    if (!data.results) throw new Error('no results');
+    return data.results.map(p => ({
+      nome: p.title,
+      num: p.sold_quantity ? `${p.sold_quantity.toLocaleString('pt-BR')} vendidos` : `R$${Math.round(p.price).toLocaleString('pt-BR')}`,
+      numRaw: p.sold_quantity||0,
+      imagem_url: p.thumbnail ? IMG_PROXY(p.thumbnail.replace('I.jpg','O.jpg')) : '',
+      link: p.permalink
+    }));
+  } catch(e) {
+    console.warn('ML erro:', e.message);
+    return [];
+  }
+}
+
+  const mlPromise = Promise.resolve({items:[], term:kw});
+
+  const ytPromise = Promise.resolve([]);
+  const cultsPromise = activeSet.has('cults')
+    ? fetchCults(kw).catch(()=>[])
+    : Promise.resolve([]);
+  const tvPromise = activeSet.has('tv')
+    ? fetchTV(kw).catch(()=>[])
+    : Promise.resolve([]);
+  const etsyPromise = activeSet.has('etsy')
+    ? fetchEtsy(kw).catch(()=>[])
+    : Promise.resolve([]);
+
+  // timeout geral de 10s — mostra o que chegou
+  const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
+
+  const [stlItems, mlResult, ytItems, cultsItems, tvItems, etsyItems] = await Promise.all([
+    wrap(stlPromise, []),
+    wrap(mlPromise,  {items:[], term:kw}),
+    wrap(ytPromise,  []),
+    wrap(cultsPromise, []),
+    wrap(tvPromise, []),
+    wrap(etsyPromise, []),
+  ]);
+
+  const mlItems = mlResult.items || [];
+  const mlTerm  = mlResult.term  || kw;
+
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:[], cults:cultsItems, tv:tvItems, etsy:etsyItems };
+  console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
+
+  renderAll(kw);
+  show('st-results');
+  document.getElementById('go-btn').disabled = false;
+}
+
+// ── RENDER ──
+function renderAll(kw) {
+  // mostra barra de termos relacionados logo abaixo dos chips
+  showWordCloudBar(kw);
+
+  // reseta grids para estado colapsado
+  ['grid-stl','grid-yt','grid-cults'].forEach(id => {
+    const g = document.getElementById(id); if (g) g.classList.add('collapsed');
+    const b = document.getElementById('expand-'+id); if (b) { b.style.display='none'; b.textContent='Ver mais ↓'; }
+  });
+
+  const { stl, ml, mlTerm, yt, cults, tv, etsy } = lastRes;
+
+  // sidebar
+  document.getElementById('cnt-stl').textContent = stl.length;
+  document.getElementById('cnt-cults').textContent = cults.length;
+  if (document.getElementById('cnt-tv')) document.getElementById('cnt-tv').textContent = tv.length;
+  if (document.getElementById('cnt-etsy')) document.getElementById('cnt-etsy').textContent = etsy.length;
+
+  // intel
+  document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
+  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, tv, cults, etsy);
+
+  // STLFlix
+  renderGrid('grid-stl', stl, 'stl');
+  if (!stl.length && csvData.length === 0) {
+    document.getElementById('meta-stl').textContent = 'planilha não carregada — importe o CSV';
+  } else {
+    document.getElementById('meta-stl').textContent = stl.length ? `${stl.length} no catálogo · ${csvData.length} total` : `sem resultados (${csvData.length} produtos no catálogo)`;
+  }
+  showExpandBtn('grid-stl', stl.length);
+
+
+  // Cults3D
+  renderGrid('grid-cults', cults, 'cults');
+  document.getElementById('meta-cults').textContent = cults.length ? `${cults.length} modelos pagos · Cults3D` : 'sem resultados';
+  showExpandBtn('grid-cults', cults.length);
+
+  // Thingiverse
+  if (document.getElementById('grid-tv')) {
+    renderGrid('grid-tv', tv, 'tv');
+    document.getElementById('meta-tv').textContent = tv.length ? `${tv.length} modelos populares · Thingiverse` : 'sem resultados';
+    showExpandBtn('grid-tv', tv.length);
+  }
+
+  // Etsy
+  if (document.getElementById('grid-etsy')) {
+    renderGrid('grid-etsy', etsy, 'etsy');
+    document.getElementById('meta-etsy').textContent = etsy.length ? `${etsy.length} produtos · ordenados por vendas · Etsy` : 'sem resultados';
+    showExpandBtn('grid-etsy', etsy.length);
+  }
+}
+
+function showExpandBtn(gridId, count) {
+  const btn = document.getElementById('expand-' + gridId);
+  if (!btn) return;
+  btn.style.display = count > 8 ? 'block' : 'none';
+}
+
+function renderGrid(id, items, tipo) {
+  const grid = document.getElementById(id);
+  if (!items.length) { grid.innerHTML = `<div class="no-results">Sem resultados</div>`; return; }
+  grid.innerHTML = items.map((p,i) => {
+    const imgEl = p.imagem_url
+      ? `<img src="${p.imagem_url}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="prod-img-ph" style="display:none;">${p.nome}</div>`
+      : `<div class="prod-img-ph">${p.nome}</div>`;
+    const badge = i===0 ? `<span class="prod-badge">1º</span>` : '';
+    const sub = tipo==='stl'
+      ? `<div class="prod-drop">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">platform.stlflix.com →</a>`
+      : tipo==='yt'
+      ? `<div class="prod-sub">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">youtube.com →</a>`
+      : tipo==='cults'
+      ? `<div class="prod-sub" style="color:#f472b6;">${p.drop||''}</div><a class="prod-link" style="color:#f472b6;" href="${p.link}" target="_blank">cults3d.com →</a>`
+      : `<div class="prod-sub">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">${(p.link||'').replace('https://','').split('/')[0]} →</a>`;
+    return `<div class="prod-card ${i===0?'top':''}">
+      <div class="prod-img">${imgEl}${badge}</div>
+      <div class="prod-foot">
+        <div class="prod-name" title="${p.nome}">${p.nome}</div>
+        <div class="prod-num">${p.num||'—'}</div>
+        <div class="prod-sub">${tipo==='stl'?'downloads':tipo==='ml'?'vendas':'views'}</div>
+        ${p.data?`<div class="prod-sub">${p.data}</div>`:''}
+        ${sub}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── FETCH ETSY (eHunt API) ──
+async function fetchEtsy(kw) {
+  try {
+    const r = await fetch(`/api/etsy?q=${encodeURIComponent(kw)}&limit=20&sort_by=4`, {signal: AbortSignal.timeout(12000)});
+    if (!r.ok) throw new Error(`Etsy ${r.status}`);
+    const d = await r.json();
+    if (d.error) { console.warn('Etsy API:', d.error, d.code); return []; }
+
+    // guarda tags globalmente para usar na barra de termos
+    if (d.allTags?.length) {
+      lastEtsyTags = d.allTags;
+      const tagsEl = document.getElementById('etsy-tags');
+      const wrap = document.getElementById('etsy-tags-wrap');
+      if (tagsEl && wrap) {
+        tagsEl.innerHTML = d.allTags.slice(0,20).map(t =>
+          `<span style="background:var(--s2);border:0.5px solid #3d1800;border-radius:20px;padding:4px 10px;font-size:10px;color:#f56400;cursor:pointer;"
+            onclick="document.getElementById('kw').value='${t}';doSearch()">${t}</span>`
+        ).join('');
+        wrap.style.display = 'block';
+      }
+    }
+
+    return (d.results || []).map(p => ({
+      nome:      p.nome,
+      num:       p.vendas > 0 ? `${Number(p.vendas).toLocaleString('pt-BR')} vendas` : `${Number(p.favoritos).toLocaleString('pt-BR')} favoritos`,
+      numRaw:    p.vendas || p.favoritos || 0,
+      imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+      link:      p.link,
+      drop:      p.preco || '',
+      tipo:      'etsy',
+      extra:     p.bestsell ? '⭐ Bestseller' : (p.vendas_semana > 0 ? `+${p.vendas_semana}/sem` : ''),
+    }));
+  } catch(e) {
+    console.warn('Etsy erro:', e.message);
+    return [];
+  }
+}
+
+// ── FETCH THINGIVERSE para busca ──
+async function fetchTV(kw) {
+  try {
+    const r = await fetch(`/api/thingiverse?q=${encodeURIComponent(kw)}&sort=popular&per_page=20`, {signal: AbortSignal.timeout(10000)});
+    if (!r.ok) throw new Error(`TV ${r.status}`);
+    const d = await r.json();
+    return (d.results || []).map(p => ({
+      nome:      p.nome,
+      num:       p.likes ? `${p.likes.toLocaleString('pt-BR')} likes` : '—',
+      numRaw:    p.likes || 0,
+      imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+      link:      p.link,
+      drop:      p.autor || '',
+      tipo:      'tv'
+    }));
+  } catch(e) {
+    console.warn('TV erro:', e.message);
+    return [];
+  }
+}
+
+// ── INTEL — análise cruzada real ──
+function buildIntel(kw, stl, ml, tv, cults, etsyData) {
+  const lines = [];
+
+  // — Volume STLFlix
+  if (stl.length) {
+    const sorted = [...stl].sort((a,b) => b.numRaw - a.numRaw);
+    const top = sorted[0];
+    const total = stl.reduce((s,p) => s + p.numRaw, 0);
+    const avg = Math.round(total / stl.length);
+    const recentes = stl.filter(p => p.data && p.data >= '2025-01').length;
+    lines.push(
+      `<strong>${stl.length} produtos no catálogo STLFlix</strong> — top: <em>"${top.nome}"</em> com <strong>${top.num}</strong>. ` +
+      `Média: <strong>${avg.toLocaleString('pt-BR')} downloads</strong>.` +
+      (recentes > 0 ? ` <strong>${recentes}</strong> publicados em 2025–2026.` : '')
+    );
+  } else {
+    lines.push(`<strong style="color:var(--lime)">Nenhum produto no catálogo STLFlix</strong> para "<strong>${kw}</strong>" — gap de portfólio confirmado.`);
+  }
+
+  // — Cults3D — o que está vendendo fora
+  if (cults.length) {
+    const topCults = [...cults].sort((a,b) => b.numRaw - a.numRaw)[0];
+    const totalCultsDl = cults.reduce((s,p) => s + p.numRaw, 0);
+    const avgCults = Math.round(totalCultsDl / cults.length);
+    lines.push(
+      `Cults3D: <strong>${cults.length} modelos pagos</strong> — mais baixado: <em>"${topCults.nome}"</em> com <strong>${topCults.num} downloads</strong>. ` +
+      `Média: <strong>${avgCults} downloads</strong> · preços entre ${cults.map(p=>p.drop).filter(Boolean).sort()[0]} e ${cults.map(p=>p.drop).filter(Boolean).sort().slice(-1)[0]}.`
+    );
+  }
+
+  // — Thingiverse — demanda gratuita
+  if (tv.length) {
+    const topTV = [...tv].sort((a,b) => b.numRaw - a.numRaw)[0];
+    lines.push(
+      `Thingiverse: <strong>${tv.length} modelos populares</strong> — mais curtido: <em>"${topTV.nome}"</em> com <strong>${topTV.num}</strong>.`
+    );
+  }
+
+  // — Etsy — vendas reais
+  if (etsyData && etsyData.length) {
+    const topEtsy = [...etsyData].sort((a,b) => b.numRaw - a.numRaw)[0];
+    const totalVendas = etsyData.reduce((s,p) => s + (p.numRaw||0), 0);
+    lines.push(
+      `Etsy: <strong>${etsyData.length} produtos</strong> — mais vendido: <em>"${topEtsy.nome}"</em> com <strong>${topEtsy.num}</strong>. ` +
+      `Total de vendas na amostra: <strong>${totalVendas.toLocaleString('pt-BR')}</strong>.`
+    );
+  }
+
+  // — Cruzamento e análise real
+  const temSTL = stl.length > 0;
+  const temCults = cults.length > 0;
+  const temTV = tv.length > 0;
+
+  if (temCults && temTV && !temSTL) {
+    const topDl = cults[0]?.numRaw || 0;
+    lines.push(
+      `<strong style="color:var(--lime)">⚡ GAP CONFIRMADO</strong> — "<strong>${kw}</strong>" vende bem no Cults (${topDl} downloads no top) ` +
+      `e tem demanda no Thingiverse, mas <strong>não existe no catálogo STLFlix</strong>. Oportunidade de entrada clara.`
+    );
+  } else if (temSTL && temCults) {
+    const stlTop = stl[0]?.numRaw || 0;
+    const cultsTop = cults[0]?.numRaw || 0;
+    const ratio = cultsTop > 0 ? (stlTop / cultsTop).toFixed(1) : '—';
+    const saturado = stl.length >= 10;
+    if (saturado) {
+      lines.push(
+        `<strong style="color:#f0a030">⚠ Categoria saturada</strong> — <strong>${stl.length} produtos</strong> na STLFlix. ` +
+        `Para entrar, precisa de diferenciação clara: ângulo criativo, tema específico ou mecânica nova.`
+      );
+    } else {
+      lines.push(
+        `Cobertura STLFlix: <strong>${stl.length} produtos</strong> — categoria não saturada. ` +
+        `Top STLFlix tem <strong>${ratio}x</strong> os downloads do top Cults — ` +
+        (parseFloat(ratio) > 1 ? 'STLFlix performa melhor que o mercado.' : 'Cults performa melhor — avaliar diferenciação.')
+      );
+    }
+  } else if (temSTL && !temCults && !temTV) {
+    lines.push(`Categoria presente na STLFlix mas <strong>sem oferta paga no Cults nem no Thingiverse</strong> — demanda pode ser baixa ou nicho muito específico.`);
+  }
+
+  // — Produto mais recente vs mais antigo
+  if (stl.length > 0) {
+    const comData = stl.filter(p => p.data);
+    if (comData.length > 1) {
+      const mais_recente = comData.sort((a,b) => b.data.localeCompare(a.data))[0];
+      const mais_antigo  = comData.sort((a,b) => a.data.localeCompare(b.data))[0];
+      if (mais_recente.data !== mais_antigo.data) {
+        lines.push(
+          `Na STLFlix: mais recente <em>"${mais_recente.nome}"</em> (${mais_recente.data?.substring(0,7)}) · ` +
+          `mais antigo <em>"${mais_antigo.nome}"</em> (${mais_antigo.data?.substring(0,7)}).`
+        );
+      }
+    }
+  }
+
+  return lines.map(l => `<div style="padding:5px 0;border-bottom:0.5px solid var(--lime-bg2);">${l}</div>`).join('');
+}
+
+// ── EXPORT ──
+
+// ── CSV ──
+function openCSV(){ document.getElementById('modal-csv').classList.add('on'); }
+function closeModal(){ document.getElementById('modal-csv').classList.remove('on'); }
+function loadFile(input) {
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{ document.getElementById('csv-txt').value=e.target.result; };
+  r.readAsText(f,'UTF-8');
+}
+function importCSV() {
+  const raw = document.getElementById('csv-txt').value.trim();
+  if(!raw) return;
+  csvData = parseCSV(raw);
+  csvTs = Date.now();
+  save('stlflix_csv', csvData);
+  save('stlflix_csv_ts', csvTs);
+  closeModal();
+  toast(`${csvData.length} produtos importados!`);
+}
+function downloadTemplate() {
+  const csv = `mes,product_id,drop_name,product_name,total_downloads\n2026-01-01,3614,DROP #292,Hoodie - Can Holder,1571\n2026-01-01,3707,Drop #300,Inkcantation - Pen & Sticky Notes Holder,1132`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='stlflix-template.csv'; a.click();
+}
+
+// ── CHIPS ──
+function toggleChip(el) {
+  const s=el.dataset.src;
+  if(activeSet.has(s)){activeSet.delete(s);el.classList.add('off');}
+  else{activeSet.add(s);el.classList.remove('off');}
+}
+
+// ── RECENTES ──
+function addRecent(kw) {
+  const list=document.getElementById('recent-list');
+  if(list.querySelector(`[data-kw="${kw}"]`)) return;
+  const el=document.createElement('div');
+  el.className='sb-item recent'; el.dataset.kw=kw;
+  el.innerHTML=`<div class="sb-dot" style="background:var(--m)"></div><span class="sb-label">${kw}</span>`;
+  el.onclick=()=>{ document.getElementById('kw').value=kw; search(); };
+  list.insertBefore(el,list.firstChild);
+  if(list.children.length>6) list.removeChild(list.lastChild);
+}
+
+// ── HELPERS ──
+function show(id) {
+  ['st-empty','st-loading','st-results'].forEach(s=>document.getElementById(s).classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function save(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
+function toast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+// ── GAP ANALYSIS — Cults vs STLFlix ──
+async function runGapAnalysis() {
+  const el = document.getElementById('gap-results');
+  const metaEl = document.getElementById('gap-meta');
+  el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Analisando com IA...</div>';
+
+  if (!csvData.length) {
+    el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Importe a planilha STLFlix primeiro.</div>';
+    return;
+  }
+
+  const universes = ['organizer','lamp','dragon','fidget','plant','pet','keychain','articulated','miniature','puzzle'];
+  const term = universes[new Date().getDay() % universes.length];
+
+  try {
+    const r = await fetch(`/api/cults?q=${encodeURIComponent(term)}&paid=true`, {signal: AbortSignal.timeout(10000)});
+    const d = await r.json();
+    const items = (d.results||[]).sort((a,b) => (b.downloads||0)-(a.downloads||0));
+
+    if (!items.length) {
+      el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Sem resultados do Cults.</div>';
+      return;
+    }
+
+    // monta lista de nomes STLFlix e Cults para análise semântica via IA
+    const stlSample = csvData.slice(0,200).map(p=>p.nome).join(', ');
+    const cultsSample = items.slice(0,20).map(p=>p.nome).join(', ');
+
+    // análise semântica via /api/gap (proxy serverless — sem CORS)
+    let gapIndices = [];
+    try {
+      const aiRes = await fetch('/api/gap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stlSample, cultsSample, cultsCount: items.length })
+      });
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        gapIndices = (aiData.indices || []).filter(n => n < items.length);
+      }
+    } catch(e) {
+      gapIndices = items.map((_,i) => i);
+    }
+
+    const gaps = gapIndices.slice(0,8).map(i => items[i]).filter(Boolean);
+    if (metaEl) metaEl.textContent = `${gaps.length} gaps · tema: ${term}`;
+
+    if (!gaps.length) {
+      el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">IA não identificou gaps claros para este tema — boa cobertura!</div>';
+      return;
+    }
+
+    el.innerHTML = `<div style="font-size:9px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;grid-column:1/-1;">ANÁLISE IA · TEMA: ${term.toUpperCase()} · ${gaps.length} gaps identificados</div>` +
+      gaps.map((p,i) => `
+        <div class="prod-card" style="border-color:#3d2000;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
+          <div class="prod-img" style="position:relative;">
+            ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="prod-img-ph">${p.nome}</div>`}
+            <span style="position:absolute;top:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>
+          </div>
+          <div class="prod-foot">
+            <div class="prod-name" title="${p.nome}">${p.nome}</div>
+            <div class="prod-num" style="color:#f0a030;">${p.downloads||0}</div>
+            <div class="prod-sub" style="color:#f472b6;font-size:8px;">${p.preco||''}</div>
+            <a class="prod-link" style="color:#f472b6;" href="${p.link}" target="_blank">cults3d.com →</a>
+          </div>
+        </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--m2);font-size:11px;">Erro: ${e.message}</div>`;
+  }
+}
+
+// ── RADAR YOUTUBE COM PLAYER INLINE ──
+
+
+
+// fechar modal clicando fora do player
+
+function toggleExpand(gridId) {
+  const grid = document.getElementById(gridId);
+  const btn  = document.getElementById('expand-' + gridId);
+  if (!grid || !btn) return;
+  const collapsed = grid.classList.toggle('collapsed');
+  btn.textContent = collapsed ? 'Ver mais ↓' : 'Ver menos ↑';
+}
+
+// mostra a barra de termos logo abaixo dos chips
+const SEMANTIC_MAP = {
+  'fidget':['fidget cube','fidget ring','stress toy','sensory toy','fidget slider','haptic coin','worry stone','click button'],
+  'futebol':['soccer ball','sports gear','stadium','goal post','trophy','jersey display','cleat holder'],
+  'fidget de futebol':['fidget cube sports','soccer fidget','ball fidget','sports sensory toy','stadium token'],
+  'luminaria':['lamp shade voronoi','led diffuser','night light','table lamp','wall sconce','geometric light','moon lamp'],
+  'lamp':['lamp shade voronoi','led diffuser','night light','table lamp','wall lamp','glow ring','geometric lamp','mushroom lamp','moon lamp','ambient light','pendant lamp','filament lamp','light diffuser','light cover'],
+  'organizer':['desk organizer','cable management','drawer insert','wall grid','monitor riser','headphone stand','pen holder'],
+  'suporte':['phone stand','tablet holder','monitor arm','headphone hook','cable clip','wall mount','charging station'],
+  'plant':['geometric planter','self-watering pot','wall planter','hanging vase','succulent holder','herb garden','kokedama stand'],
+  'vaso':['vaso geometrico','vaso de parede','vaso suspenso','porta suculenta','jardim vertical'],
+  'pet':['cat toy','dog bowl stand','pet feeder','cat house','hamster wheel','bird feeder','pet tag'],
+  'gato':['cat toy interactive','cat wall shelf','cat tree bracket','feeder puzzle cat'],
+  'rpg':['dice tower','dice tray','miniature base','dungeon terrain','spell token','condition marker','initiative tracker'],
+  'dice':['dice tower','dice box','dice tray','dice jail','dice vault','polyhedral dice display'],
+  'dragon':['dragon articulated','flexi dragon','dragon bust','dragon egg','dragon dice tower','dragon miniature','dragon statue','dragon figurine','flying dragon','baby dragon','dragon skull','chinese dragon','western dragon','dragon head','dragon wing'],
+  'flexi':['flexi dragon','flexi snake','flexi cat','flexi fish','articulated flexi','print in place flexi','flexi octopus','flexi turtle','flexi dinosaur'],
+  'articulated':['articulated dragon','articulated snake','articulated fish','print in place','flexi articulated','movable joints','articulated hand','articulated spine'],
+  'fidget':['fidget cube','fidget ring','stress toy','sensory toy','fidget slider','haptic coin','worry stone','click button','fidget chain','anxiety relief','fidget gear','fidget spinner'],
+  'organizer':['desk organizer','cable management','drawer insert','wall grid','monitor riser','headphone stand','pen holder','pencil cup','cord organizer','tray organizer'],
+  'anel':['geometric ring','statement ring','band ring','adjustable ring','signet ring'],
+  'keychain':['snap fit keychain','carabiner','token keychain','geometric charm','pill holder keychain'],
+  'dragon':['dragon articulated','flexi dragon','dragon bust','dragon egg','dragon dice tower','dragon miniature'],
+  'holder':['phone holder','tablet holder','cable holder','key holder','controller holder','headphone holder'],
+  'light':['lamp shade','led strip cover','night light','glow diffuser','ambient lamp','light box','neon sign','led panel frame'],
+  'shelf':['floating shelf','wall shelf','corner shelf','book shelf','display shelf','modular shelf','hex shelf'],
+  'wall':['wall art','wall mount','wall shelf','wall planter','wall hook','wall organizer','gallery frame'],
+  'desk':['desk organizer','desk mat corner','monitor stand','cable management','under desk tray','headphone hook','pen holder'],
+  'cat':['cat toy','cat feeder puzzle','cat wall shelf','cat tunnel','cat scratcher','interactive cat toy','cat treat dispenser'],
+  'dog':['dog bowl stand','dog tag','dog toy','dog feeder','dog collar holder','paw print'],
+  'ring':['geometric ring','signet ring','band ring','statement ring','adjustable ring','minimalist ring','textured ring'],
+  'dice':['dice tower','dice tray','dice box','dice vault','polyhedral dice display','dice jail','dice roller'],
+  'vase':['geometric vase','voronoi vase','minimal vase','spiral vase','organic vase','flower vase','bud vase'],
+  'box':['storage box','snap fit box','hinged box','trinket box','card box','pill box','watch box'],
+  'stand':['monitor stand','phone stand','tablet stand','headphone stand','watch stand','guitar stand'],
+};
+
+
+
+function showWordCloudBar(kw) {
+  const bar = document.getElementById('wc-bar');
+  const tagsEl      = document.getElementById('wc-bar-tags');
+  const pinterestEl = document.getElementById('wc-bar-pinterest');
+  const insightEl   = document.getElementById('wc-bar-insight');
+  if (!bar) return;
+
+  const localTerms = getLocalTerms(kw);
+
+  // combina: tags reais do Etsy (o que compradores buscam) + dicionário semântico local
+  const combined = [...new Set([...lastEtsyTags, ...localTerms])].slice(0, 40);
+  const fromEtsy = lastEtsyTags.length > 0;
+
+  renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, combined, fromEtsy);
+  bar.style.display = 'block';
+}
+
+function getLocalTerms(kw) {
+  const input = kw.toLowerCase().trim();
+  let terms = SEMANTIC_MAP[input] || [];
+  if (!terms.length) {
+    for (const [key,vals] of Object.entries(SEMANTIC_MAP)) {
+      if (input.includes(key) || key.includes(input.split(' ')[0])) terms=[...terms,...vals];
+    }
+  }
+  terms = [...new Set(terms)];
+  if (!terms.length) {
+    terms = [kw+' 3d print',kw+' holder',kw+' stand',kw+' organizer',kw+' modular',kw+' articulated',kw+' geometric',kw+' flexi',kw+' miniature'];
+  }
+  return terms;
+}
+
+function renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, terms, fromEtsy) {
+  // separa tags do Etsy (primeiras, em laranja) das locais (resto, em verde)
+  const etsyCount = fromEtsy ? Math.min(lastEtsyTags.length, terms.length) : 0;
+
+  tagsEl.innerHTML = terms.slice(0,40).map((t,i) => {
+    const isEtsy = fromEtsy && i < etsyCount;
+    const color = isEtsy ? '#f56400' : 'var(--lime)';
+    const border = isEtsy ? '#3d1800' : 'var(--lime-d)';
+    const bg = isEtsy ? '#1a0800' : 'var(--lime-bg)';
+    return `<span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--m3);cursor:pointer;white-space:nowrap;"
+      onmouseover="this.style.borderColor='${border}';this.style.color='${color}'"
+      onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--m3)'"
+      onclick="document.getElementById('kw').value='${t}';doSearch()">
+      ${t}${isEtsy ? ' <span style="font-size:8px;opacity:.6;">etsy</span>' : ''}</span>`;
+  }).join('');
+
+  // mais links Pinterest — até 8, misturando etsy tags e termos locais
+  pinterestEl.innerHTML = terms.slice(0,8).map(t=>`
+    <a href="https://pinterest.com/search/pins/?q=${encodeURIComponent(t+' 3d print')}" target="_blank"
+       style="background:#1a0010;border:0.5px solid #3d0028;border-radius:20px;padding:3px 10px;font-size:10px;color:#f472b6;text-decoration:none;white-space:nowrap;">
+      📌 ${t}</a>`).join('');
+
+  insightEl.textContent = fromEtsy
+    ? `${etsyCount} tags reais do Etsy + ${terms.length - etsyCount} termos semânticos — ${terms.length} caminhos para pesquisar no Pinterest e Cults.`
+    : `${terms.length} termos mapeados para "${kw}".`;
+  insightEl.style.display = 'block';
+}
+
+
+
+// ── THINGIVERSE ──
+async function loadThingiverse() {
+  const grid = document.getElementById('tv-grid');
+  const meta = document.getElementById('tv-meta');
+  const cat  = document.getElementById('tv-cat')?.value || 'organizer';
+  const stlNames = csvData.map(p => (p.nome||'').toLowerCase());
+
+  grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:16px;">Carregando Thingiverse...</div>';
+
+  try {
+    const r = await fetch(`/api/thingiverse?q=${encodeURIComponent(cat)}&sort=popular&per_page=20`, {signal: AbortSignal.timeout(10000)});
+    const d = await r.json();
+    const items = d.results || [];
+    if (!items.length) { grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:16px;">Sem resultados.</div>'; return; }
+    meta.textContent = `${items.length} modelos · likes como proxy de popularidade`;
+    const isGap = nome => {
+      const words = nome.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      return !words.some(w => stlNames.some(n => n.includes(w)));
+    };
+    grid.innerHTML = items.map((p, i) => `
+      <div class="prod-card${i===0?' top':''}" onclick="window.open('${p.link}','_blank')" style="${isGap(p.nome)?'border-color:#3d2000;':''}" title="${p.nome}">
+        <div class="prod-img" style="position:relative;">
+          ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="prod-img-ph">${p.nome}</div>`}
+          ${i===0?'<span class="prod-badge">1º</span>':''}
+          ${isGap(p.nome)?'<span style="position:absolute;bottom:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>':''}
+        </div>
+        <div class="prod-foot">
+          <div class="prod-name" title="${p.nome}">${p.nome}</div>
+          <div class="prod-num" style="color:#5bc8f5;">${p.likes.toLocaleString('pt-BR')}</div>
+          <div class="prod-sub" style="font-size:7px;">likes · ${p.autor}</div>
+          <a class="prod-link" style="color:#5bc8f5;" href="${p.link}" target="_blank">thingiverse.com →</a>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = `<div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:16px;">Erro: ${e.message}</div>`;
+  }
+}
+
+// ── GOOGLE TRENDS — links diretos por categoria ──
+function renderTrendsLinks() {
+  const el = document.getElementById('trends-grid');
+  if (!el) return;
+  const trends = [
+    { label:'Fidget Toys',       color:'#2dd4bf', terms:['fidget toy','fidget cube','stress toy'],          geo:'US' },
+    { label:'Desk Organizer',    color:'#4a9eff', terms:['desk organizer','desk setup','cable management'], geo:'US' },
+    { label:'3D Printed Toys',   color:'#b08fff', terms:['3d printed toy','articulated toy','flexi toy'],   geo:'US' },
+    { label:'Miniatures RPG',    color:'#818cf8', terms:['miniature painting','dnd miniature','rpg mini'],  geo:'US' },
+    { label:'Lamp Shade',        color:'#f0a030', terms:['lamp shade','led lamp','night light'],            geo:'GB' },
+    { label:'Plant Accessories', color:'#3ddc84', terms:['plant pot','succulent planter','wall planter'],   geo:'GB' },
+    { label:'Pet Accessories',   color:'#f472b6', terms:['cat toy','dog accessory','pet organizer'],        geo:'US' },
+    { label:'Keychain DIY',      color:'#fb923c', terms:['keychain diy','custom keychain','3d keychain'],   geo:'BR' },
+    { label:'Halloween Props',   color:'#7c3aed', terms:['halloween prop','halloween decoration','skull'],   geo:'US' },
+    { label:'Board Game Acc.',   color:'#6366f1', terms:['board game organizer','dice tower','tabletop'],   geo:'US' },
+    { label:'Phone Stand',       color:'#0ea5e9', terms:['phone stand','phone holder','phone mount'],       geo:'BR' },
+    { label:'Cable Management',  color:'#38bdf8', terms:['cable management','cable organizer','desk cable'], geo:'US' },
+  ];
+  el.innerHTML = trends.map(t => {
+    const url = `https://trends.google.com/trends/explore?q=${encodeURIComponent(t.terms.join(','))}&geo=${t.geo}&hl=pt-BR`;
+    return `
+      <a href="${url}" target="_blank" style="display:block;text-decoration:none;padding:10px 14px;background:var(--s2);border-radius:8px;border:0.5px solid var(--b2);transition:border-color .15s;" onmouseover="this.style.borderColor='${t.color}'" onmouseout="this.style.borderColor='var(--b2)'">
+        <div style="font-size:10px;font-weight:500;color:${t.color};margin-bottom:3px;">${t.label}</div>
+        <div style="font-size:9px;color:var(--m);margin-bottom:6px;">${t.terms.slice(0,2).join(' · ')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:8px;font-family:var(--mono);color:var(--m);background:var(--s);padding:2px 6px;border-radius:3px;">${t.geo==='BR'?'🇧🇷 Brasil':t.geo==='GB'?'🇬🇧 Europa':'🇺🇸 EUA'}</span>
+          <span style="font-size:9px;color:${t.color};">Trends →</span>
+        </div>
+      </a>`;
+  }).join('');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  const sw = document.getElementById('search-wrap');
+  if(sw) sw.style.display = name==='busca' ? '' : 'none';
+  if(name==='radar') initRadarThemes();
+  if(name==='intel') runIntelDashboard();
+}
+
+// ── DASHBOARD DE INTELIGÊNCIA ──
+const STL_CATEGORIES = [
+  { label:'Fidgets',             color:'#2dd4bf', cat:'toys', keywords:['fidget','spinner','clicker','haptic','stress','anxiety','sensory'] },
+  { label:'RPG Accessories',     color:'#b08fff', cat:'toys', keywords:['dice','rpg','dungeon','spell','token','condition','initiative','dnd'] },
+  { label:'Articulated Toys',    color:'#a78bfa', cat:'toys', keywords:['articulated','flexi','flexible','print-in-place','movable','dragon','snake','fish'] },
+  { label:'Miniatures',          color:'#818cf8', cat:'toys', keywords:['miniature','mini','bust','figure','statue','figurine','character'] },
+  { label:'Puzzle & Brain',      color:'#6366f1', cat:'toys', keywords:['puzzle','brain','teaser','maze','trick','impossible','interlocking'] },
+  { label:'Tabletop Games',      color:'#4f46e5', cat:'toys', keywords:['tabletop','board','game','card','token','meeple','score'] },
+  { label:'Desk Organizers',     color:'#4a9eff', cat:'gadgets', keywords:['desk','organizer','holder','stand','cable','monitor','headphone','pen'] },
+  { label:'Portable Devices',    color:'#38bdf8', cat:'gadgets', keywords:['phone','tablet','watch','earphone','charger','mount','case','dock'] },
+  { label:'Computer Accessories',color:'#0ea5e9', cat:'gadgets', keywords:['keyboard','mouse','webcam','microphone','speaker','pc','computer'] },
+  { label:'Smart Accessories',   color:'#0284c7', cat:'gadgets', keywords:['smart','alexa','google','assistant','hub','remote','controller'] },
+  { label:'Lights & Vases',      color:'#f0a030', cat:'household', keywords:['lamp','light','luminaria','glow','neon','led','vase','shade'] },
+  { label:'Kitchen Accessories', color:'#fb923c', cat:'household', keywords:['kitchen','spice','knife','bottle','cup','mug','coffee','utensil','cook'] },
+  { label:'Bathroom',            color:'#f97316', cat:'household', keywords:['bathroom','soap','toothbrush','toilet','shower','bath'] },
+  { label:'Wall Decorations',    color:'#ea580c', cat:'household', keywords:['wall','frame','photo','picture','decor','shelf','hook','coat'] },
+  { label:'Halloween',           color:'#7c3aed', cat:'seasonal', keywords:['halloween','skull','skeleton','ghost','witch','pumpkin','bat','zombie'] },
+  { label:'Christmas',           color:'#dc2626', cat:'seasonal', keywords:['christmas','xmas','santa','reindeer','ornament','tree','snowflake','elf'] },
+  { label:'Valentine',           color:'#db2777', cat:'seasonal', keywords:['valentine','heart','love','rose','cupid','romantic'] },
+  { label:'Easter & Other',      color:'#65a30d', cat:'seasonal', keywords:['easter','egg','bunny','mothers','fathers','birthday','wedding'] },
+  { label:'Sculptures & Busts',  color:'#f87171', cat:'art', keywords:['sculpture','bust','portrait','bust','head','face','artist','classical'] },
+  { label:'Articulated Animals', color:'#fca5a5', cat:'art', keywords:['articulated animal','creature','monster','beast','wolf','bear','lion'] },
+  { label:'Kinetic & Toyart',    color:'#fecaca', cat:'art', keywords:['kinetic','toyart','chibi','kawaii','cute','cartoon','stylized'] },
+  { label:'Wall Art',            color:'#fee2e2', cat:'art', keywords:['wall art','geometric','mandala','abstract','pattern','panel'] },
+  { label:'Cosplay Props',       color:'#c084fc', cat:'costume', keywords:['cosplay','prop','sword','shield','armor','helmet','costume','weapon'] },
+  { label:'Jewelry & Keychains', color:'#e879f9', cat:'costume', keywords:['ring','earring','bracelet','necklace','keychain','pendant','jewelry','badge'] },
+  { label:'Masks & Accessories', color:'#d946ef', cat:'costume', keywords:['mask','crown','tiara','brooch','pin','clip','hair','headband'] },
+];
+
+
+async function runIntelDashboard() {
+  const period = parseInt(document.getElementById('intel-period')?.value || '30');
+  document.getElementById('intel-date').textContent =
+    'Atualizado: ' + new Date().toLocaleString('pt-BR', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+
+  analyzeSTLCategories(period);
+  renderSeasonality();
+  loadCultsAscending();
+  runGapAnalysis();
+  loadThingiverse();
+  renderTrendsLinks();
+}
+
+// ── SUBCATEGORIAS REAIS STLFLIX ──
+
+function analyzeSTLCategories(period) {
+  const el = document.getElementById('intel-categories');
+  if (!csvData.length) {
+    el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Importe a planilha STLFlix primeiro.</div>';
+    return;
+  }
+
+  const results = STL_CATEGORIES.map(u => {
+    const matched = csvData.filter(p => {
+      const n = (p.nome||'').toLowerCase();
+      return u.keywords.some(k => n.includes(k));
+    });
+    const totalDl = matched.reduce((s,p)=>s+(p.numRaw||0),0);
+    const top = matched.sort((a,b)=>(b.numRaw||0)-(a.numRaw||0))[0];
+    return {...u, count:matched.length, totalDl, top};
+  }).filter(u=>u.count>0).sort((a,b)=>b.totalDl-a.totalDl);
+
+  const maxTotal = results[0]?.totalDl || 1;
+
+  el.innerHTML = results.map(u=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;"
+      onclick="document.getElementById('kw').value='${u.keywords[0]}';switchTab('busca',document.getElementById('tab-btn-busca'));doSearch()">
+      <div style="min-width:130px;font-size:10px;color:var(--m3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.label}</div>
+      <div style="flex:1;background:var(--b2);border-radius:2px;height:5px;overflow:hidden;">
+        <div style="height:5px;border-radius:2px;background:${u.color};width:${Math.round(u.totalDl/maxTotal*100)}%;"></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:${u.color};min-width:55px;text-align:right;">${u.totalDl.toLocaleString('pt-BR')}</div>
+      <div style="font-size:9px;color:var(--m);min-width:50px;">${u.count} itens</div>
+    </div>`).join('');
+}
+
+// ── SAZONALIDADE — gráfico de barras por mês ──
+function renderSeasonality() {
+  const el = document.getElementById('seasonality-chart');
+  const catFilter = document.getElementById('season-cat')?.value || 'all';
+  if (!csvData.length) { el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Importe a planilha STLFlix.</div>'; return; }
+
+  const catMap = {
+    toys:['fidget','dice','rpg','articulated','flexi','puzzle','miniature','tabletop','dragon','game'],
+    gadgets:['desk','organizer','holder','stand','phone','tablet','cable','monitor','headphone','keyboard','mouse'],
+    household:['lamp','light','vase','kitchen','spice','knife','bottle','mug','bathroom','wall','shelf'],
+    seasonal:['halloween','christmas','xmas','valentine','easter','mothers','fathers','skull','santa'],
+    art:['sculpture','bust','kinetic','toyart','wall art','geometric','mandala','articulated animal'],
+    costume:['cosplay','ring','earring','keychain','mask','crown','jewelry','bracelet','necklace'],
+  };
+
+  const filtered = catFilter === 'all' ? csvData :
+    csvData.filter(p => {
+      const n=(p.nome||'').toLowerCase();
+      return (catMap[catFilter]||[]).some(k=>n.includes(k));
+    });
+
+  // agrupa por mês
+  const byMonth = {};
+  filtered.forEach(p => {
+    const m = (p.data||'').substring(0,7);
+    if (!m) return;
+    byMonth[m] = (byMonth[m]||0) + (p.numRaw||0);
+  });
+
+  const months = Object.keys(byMonth).sort();
+  if (!months.length) { el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Sem dados para o período.</div>'; return; }
+
+  const maxVal = Math.max(...Object.values(byMonth));
+  const monthNames = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
+
+  const total = Object.values(byMonth).reduce((a,b)=>a+b,0);
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:4px;height:160px;padding-bottom:24px;position:relative;border-bottom:1px solid var(--b2);margin-bottom:8px;">
+      ${months.map(m => {
+        const val = byMonth[m] || 0;
+        const h = Math.max(Math.round((val/maxVal)*130), 2);
+        const label = monthNames[m.split('-')[1]] || m.split('-')[1];
+        const isMax = val === maxVal;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" title="${val.toLocaleString('pt-BR')} downloads em ${label}">
+          <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:${isMax?'var(--lime)':'#5a8a30'};min-height:14px;">${val>=1000?(val/1000).toFixed(1)+'K':val}</div>
+          <div style="width:100%;background:${isMax?'var(--lime)':'#2a5a15'};border-radius:3px 3px 0 0;height:${h}px;min-height:2px;transition:height .4s;"></div>
+          <div style="font-size:9px;font-weight:500;color:${isMax?'var(--lime)':'var(--m3)'};margin-top:4px;">${label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:10px;color:var(--m2);">Mês com mais downloads: <strong style="color:var(--lime);">${monthNames[months.find(m=>byMonth[m]===maxVal)?.split('-')[1]]||'—'}</strong></div>
+      <div style="font-size:10px;color:var(--m2);">Total: <strong style="color:var(--t);">${total.toLocaleString('pt-BR')}</strong> downloads</div>
+    </div>
+  `;
+}
+
+// ── CULTS ASCENSÃO ──
+async function loadCultsAscending() {
+  const grid = document.getElementById('intel-cults-grid');
+  const meta = document.getElementById('cults-ascend-meta');
+  grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>';
+  const hotTerms = ['fidget','organizer','lamp','dragon','pet','plant','keychain','stand','flexi','miniature','puzzle'];
+  const term = hotTerms[new Date().getDay() % hotTerms.length];
+  try {
+    const r = await fetch('/api/cults?q='+encodeURIComponent(term)+'&paid=true', {signal:AbortSignal.timeout(10000)});
+    const d = await r.json();
+    const items = (d.results||[]).sort((a,b)=>(b.downloads||0)-(a.downloads||0)).slice(0,12);
+    meta.textContent = items.length + ' · tema: ' + term;
+    if (!items.length) { grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Sem dados.</div>'; return; }
+    grid.innerHTML = items.map((p,i)=>`
+      <div class="prod-card${i===0?' top':''}" onclick="window.open('${p.link}','_blank')">
+        <div class="prod-img">
+          ${p.imagem?`<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<div class="prod-img-ph">${p.nome}</div>`}
+          ${i===0?'<span class="prod-badge">1º</span>':''}
+        </div>
+        <div class="prod-foot">
+          <div class="prod-name" title="${p.nome}">${p.nome}</div>
+          <div class="prod-num">${p.downloads||'—'}</div>
+          <div class="prod-sub" style="color:#f472b6;font-size:8px;">${p.preco||''}</div>
+          <a class="prod-link" style="color:#f472b6;" href="${p.link}" target="_blank">cults3d.com →</a>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Erro ao carregar.</div>';
+  }
+}
+
+// ── REDDIT INSIGHTS ──
+
+function classifyRedditPost(title, flair) {
+  const t = title.toLowerCase();
+  if (/anyone.*(model|design|file)|looking for|where.*find|need.*stl|request|help me find|does.*exist/i.test(title)) return 'request';
+  if (/multicolor|multi-color|bambu|orca|slicer|support|infill|layer|filament|material|tpu|petg|resin|technique|trick|tip|method/i.test(title)) return 'technique';
+  return 'trending';
+}
+
+// ── NUVEM DE PALAVRAS ──
+
+// ── CONFLUÊNCIA ──
+function runConfluence() {
+  const list = document.getElementById('conf-list');
+  const {stl, ml, yt} = lastRes;
+  const kw = lastKw;
+  if (!kw) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Faça uma busca primeiro.</div>'; return; }
+
+  const strapiNames = stl.map(p=>p.nome.toLowerCase());
+  const existsInSTL = nome => strapiNames.some(n=>n.includes(nome.toLowerCase().split(' ')[0]));
+
+  // monta variantes do termo para cruzar nas fontes
+  const variants = [
+    `${kw}`,
+    `${kw} modular`,
+    `${kw} magnético`,
+    `${kw} minimalista`,
+    `${kw} storage`,
+    `${kw} art déco`,
+    `${kw} travel`,
+  ];
+
+  const cards = variants.map((v, i) => {
+    const inML  = ml.some(p => p.nome.toLowerCase().includes(kw.toLowerCase()));
+    const inYT  = yt.some(p => p.nome.toLowerCase().includes(kw.toLowerCase()));
+    const inSTL = existsInSTL(v);
+    const gap   = !inSTL;
+    const srcCount = (inML?1:0) + (inYT?1:0) + (stl.length>0?1:0);
+    const score = Math.min(srcCount*2 + (gap?2:0) + (i===0?1:0), 10);
+
+    const mlTop  = ml[i]  || ml[0];
+    const ytTop  = yt[i]  || yt[0];
+    const stlTop = stl[i] || stl[0];
+
+    const details = [
+      stlTop && {src:'STLFlix',     val:stlTop.num||'—',  label:'downloads'},
+      mlTop  && {src:'Mercado Livre',val:mlTop.num||'—',  label:'vendas'},
+      ytTop  && {src:'YouTube',     val:ytTop.num||'—',   label:'views'},
+      {src:'Catálogo STLFlix', val: gap?'ausente':'existe', label:'status'},
+    ].filter(Boolean);
+
+    const tags = [
+      stl.length && {label:'STLFlix', cls:'ct-stl'},
+      inML       && {label:'ML Brasil', cls:'ct-ml'},
+      inYT       && {label:'YouTube', cls:'ct-yt'},
+      gap        && {label:'GAP catálogo', cls:'ct-gap'},
+    ].filter(Boolean);
+
+    const insight = `${srcCount} fonte${srcCount>1?'s':''} confirmam demanda para "${v}".${gap?' <strong>Produto ausente no catálogo STLFlix — janela de entrada aberta.</strong>':' Produto já existe — avaliar diferenciação.'}`;
+
+    return {v, score, gap, tags, details, insight};
+  }).sort((a,b)=>b.score-a.score);
+
+  window._confCards = cards;
+  document.getElementById('conf-last').textContent = `última análise: ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+
+  list.innerHTML = cards.map((c,i) => `
+    <div class="conf-card ${c.score>=8?'high':c.score>=6?'mid':''}">
+      <div class="conf-head" onclick="toggleConf(${i})">
+        <div class="conf-score ${c.score>=8?'score-high':c.score>=6?'score-mid':'score-low'}">${c.score.toFixed(1)}</div>
+        <div class="conf-info">
+          <div class="conf-name">${c.v}</div>
+          <div class="conf-tags">${c.tags.map(t=>`<span class="ct ${t.cls}">${t.label}</span>`).join('')}</div>
+        </div>
+        <button class="btn" style="font-size:10px;padding:3px 10px;" onclick="event.stopPropagation();copyConf(${i})">Copiar</button>
+      </div>
+      <div class="conf-body" id="conf-body-${i}">
+        <div class="conf-detail">${c.details.map(d=>`<div class="conf-detail-cell"><div class="conf-detail-src">${d.src}</div><div class="conf-detail-val">${d.val}</div><div class="conf-detail-label">${d.label}</div></div>`).join('')}</div>
+        <div class="conf-insight">${c.insight}</div>
+        <div style="margin-top:10px;display:flex;gap:6px;">
+          <a href="https://platform.stlflix.com/pt-BR/explore?search=${encodeURIComponent(c.v)}" target="_blank" class="btn" style="font-size:10px;">Ver na STLFlix →</a>
+          <button class="btn primary" style="font-size:10px;" onclick="copyConfBriefing(${i})">Briefing p/ modeladores</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleConf(i) {
+  const b = document.getElementById('conf-body-'+i);
+  if(b) b.classList.toggle('open');
+}
+function copyConf(i) {
+  const c = (window._confCards||[])[i]; if(!c) return;
+  const t = `CONFLUÊNCIA: ${c.v}\nScore: ${c.score}/10\n${c.gap?'GAP NO CATÁLOGO STLFlix\n':''}Fontes: ${c.tags.map(t=>t.label).join(', ')}\n${c.details.map(d=>`${d.src}: ${d.val} ${d.label}`).join('\n')}`;
+  navigator.clipboard.writeText(t).then(()=>toast('Card copiado!'));
+}
+function copyConfBriefing(i) {
+  const c = (window._confCards||[])[i]; if(!c) return;
+  const t = `BRIEFING — ${c.v}\nScore: ${c.score}/10\n${c.gap?'GAP — ausente no catálogo STLFlix\n':'Produto existente\n'}\nDados:\n${c.details.map(d=>`  ${d.src}: ${d.val} ${d.label}`).join('\n')}\n\n${c.insight.replace(/<[^>]+>/g,'')}`;
+  navigator.clipboard.writeText(t).then(()=>toast('Briefing copiado!'));
+}
+
+// ── RADAR SEMANAL ──
+const DEFAULT_THEMES = [
+  {id:1, tema:'organizadores de mesa e desk setup'},
+  {id:2, tema:'RPG e jogos de tabuleiro'},
+  {id:3, tema:'acessórios para pets'},
+  {id:4, tema:'iluminação decorativa'},
+  {id:5, tema:'garden e plantas'},
+  {id:6, tema:'cozinha funcional'},
+];
+let radarThemes = JSON.parse(localStorage.getItem('stlflix_radar')||'null') || DEFAULT_THEMES;
+
+function initRadarThemes() {
+  const list = document.getElementById('radar-themes-list');
+  list.innerHTML = radarThemes.map(t=>`
+    <div class="radar-theme-row" data-id="${t.id}">
+      <input class="radar-theme-input" value="${t.tema}" onchange="updateTheme(${t.id},this.value)" placeholder="ex: organizadores de mesa impressão 3d">
+      <button class="radar-remove" onclick="removeTheme(${t.id})" title="Remover">×</button>
+    </div>`).join('');
+}
+function addRadarTheme() {
+  const id = Date.now();
+  radarThemes.push({id, tema:''});
+  saveThemes(); initRadarThemes();
+  setTimeout(()=>{ const inputs=document.querySelectorAll('.radar-theme-input'); if(inputs.length) inputs[inputs.length-1].focus(); },50);
+}
+function removeTheme(id) { radarThemes=radarThemes.filter(t=>t.id!==id); saveThemes(); initRadarThemes(); }
+function updateTheme(id,val) { const t=radarThemes.find(t=>t.id===id); if(t){t.tema=val;saveThemes();} }
+function saveThemes() { localStorage.setItem('stlflix_radar',JSON.stringify(radarThemes)); }
+
+async function runRadar() {
+  const btn = document.querySelector('#tab-radar .btn.primary');
+  btn.textContent='VARRENDO...'; btn.disabled=true;
+  const results = document.getElementById('radar-results');
+  results.innerHTML = '<div style="text-align:center;padding:30px;color:var(--m2);font-size:12px;">Buscando sinais...</div>';
+
+  const themes = radarThemes.filter(t=>t.tema.trim());
+  if(!themes.length){ results.innerHTML='<div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Adicione temas para monitorar.</div>'; btn.textContent='Rodar radar agora'; btn.disabled=false; return; }
+
+  let html = '';
+  for(const theme of themes) {
+    const signals = await fetchRadarSignals(theme);
+    if(!signals.length) continue;
+    html += `<div class="radar-section">
+      <div class="radar-sec-head">
+        <span class="radar-sec-tag">${theme.tema}</span>
+        <span style="font-size:10px;color:var(--m2);">${signals.length} sinais</span>
+        <div class="radar-sec-line"></div>
+        <button class="btn" style="font-size:10px;padding:3px 10px;" onclick="copyRadarSection('${encodeURIComponent(theme.tema)}',${JSON.stringify(signals).replace(/'/g,"&#39;")})">Copiar</button>
+      </div>
+      <div class="signal-grid">${signals.map(s=>renderSignal(s)).join('')}</div>
+    </div>`;
+  }
+
+  results.innerHTML = html || '<div style="text-align:center;padding:40px;color:var(--m2);font-size:12px;">Nenhum sinal encontrado.</div>';
+  document.getElementById('radar-last').textContent = `última execução: ${new Date().toLocaleString('pt-BR',{weekday:'short',hour:'2-digit',minute:'2-digit'})}`;
+  btn.textContent='Rodar radar agora'; btn.disabled=false;
+}
+
+async function fetchRadarSignals(theme) {
+  const signals = [];
+  const kw = theme.tema;
+  // ML real para o tema
+  try {
+    const kwPT = await Promise.race([translate(kw), new Promise(r=>setTimeout(()=>r(kw),3000))]);
+    const items = await Promise.race([fetchMLItems(kwPT), new Promise(r=>setTimeout(()=>r([]),6000))]);
+    items.slice(0,3).filter(p=>p.numRaw>10).forEach(p=>{
+        signals.push({tipo:p.numRaw>100?'hot':'val', tema:kw, titulo:p.nome, meta:`vendidos no ML`, num:p.num, unit:'vendidos · ML Brasil', badges:p.numRaw>100?['alta demanda','ML Brasil']:['validado','ML Brasil'], link:p.link});
+      });
+  } catch {}
+  // YouTube real para o tema
+  try {
+    const ytItems = await Promise.race([fetchYT(kw), new Promise(r=>setTimeout(()=>r([]),7000))]);
+    ytItems.slice(0,2).forEach(v=>{
+      signals.push({tipo:'yt', tema:kw, titulo:v.nome, meta:v.drop||'YouTube', num:v.num, unit:'views', badges:['YouTube',v.numRaw>100000?'viral':'relevante'], link:v.link});
+    });
+  } catch {}
+  return signals;
+}
+
+function renderSignal(s) {
+  const border = s.tipo==='hot'?'hot':s.tipo==='yt'?'':s.tipo==='val'?'':'';
+  const numColor = s.tipo==='yt'?'color:var(--red)':'color:var(--lime)';
+  const bClass = {'alta demanda':'sb-hot','viral':'sb-hot','YouTube':'ct-yt','validado':'sb-val','relevante':'sb-val','ML Brasil':'ct-ml','novo':'sb-new','gap':'sb-gap'};
+  return `<div class="signal-card ${border}" onclick="window.open('${s.link}','_blank')">
+    <div class="signal-theme">${s.tema}</div>
+    <div class="signal-title">${s.titulo}</div>
+    <div class="signal-meta">${s.meta}</div>
+    <div class="signal-num" style="${numColor}">${s.num}</div>
+    <div class="signal-unit">${s.unit}</div>
+    <div class="sig-badges">${(s.badges||[]).map(b=>`<span class="sig-b ${bClass[b]||'sb-val'}">${b}</span>`).join('')}</div>
+  </div>`;
+}
+
+// ── init ──
+document.getElementById('modal-csv').addEventListener('click',e=>{if(e.target.id==='modal-csv')closeModal();});
+
+// init
+if(csvData.length) toast(`${csvData.length} produtos STLFlix em cache`);
+</script>
+</body>
+</html>
