@@ -16,7 +16,6 @@ export default async function handler(req) {
   try {
     const body = {
       search_key: q,
-      status: 1,
       sort_by: sortBy,
       desc: 1,
       page_num: 1,
@@ -41,13 +40,19 @@ export default async function handler(req) {
       });
     }
 
-    if (d.code !== 0) {
+    if (d.code !== 0 && d.code !== 200) {
       return new Response(JSON.stringify({ results: [], error: d.msg || d.message, code: d.code }), {
         status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
 
+    // debug — retorna estrutura completa se lista vazia
     const items = d.data?.list || [];
+    if (items.length === 0) {
+      return new Response(JSON.stringify({ results: [], _debug: { code: d.code, data_keys: d.data ? Object.keys(d.data) : null, data_sample: JSON.stringify(d.data).substring(0,500) }}), {
+        status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
     const results = items.map(item => ({
       nome:      item.title || '',
