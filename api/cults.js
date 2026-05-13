@@ -85,20 +85,13 @@ export default async function handler(req) {
 
     const items = d?.data?.creationsSearchBatch?.results || [];
 
-    // filtra apenas produtos publicados nos últimos 2 anos
-    const recent = items.filter(i => {
+    // filtra apenas produtos publicados nos últimos 2 anos — sem fallback para datas antigas
+    const filtered = items.filter(i => {
       if (!i.publishedAt) return false;
       return i.publishedAt.substring(0,10) >= cutoffStr;
     });
 
-    // se filtro deixar muito poucos, relaxa para 3 anos
-    const filtered = recent.length >= 5 ? recent : items.filter(i => {
-      if (!i.publishedAt) return true;
-      const threeyears = new Date();
-      threeyears.setFullYear(threeyears.getFullYear() - 3);
-      return i.publishedAt.substring(0,10) >= threeyears.toISOString().substring(0,10);
-    });
-
+    // se nenhum resultado recente, retorna array vazio — melhor mostrar nada que mostrar coisa velha
     return new Response(JSON.stringify({
       total: d?.data?.creationsSearchBatch?.total || 0,
       results: filtered.map(i => {
