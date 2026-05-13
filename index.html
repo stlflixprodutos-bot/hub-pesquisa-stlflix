@@ -261,7 +261,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#001a10;color:#3ddc84;border:0.5px solid #003d1a;">SAZONALIDADE</span>
-            <span style="font-size:11px;color:var(--m3);">Downloads por mês · 2026</span>
+            <span style="font-size:11px;color:var(--m3);">Downloads STLFlix por mês · catálogo 2026</span>
           </div>
           <select id="season-cat" onchange="renderSeasonality()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:4px;color:var(--t);font-family:var(--sans);font-size:10px;padding:3px 8px;outline:none;cursor:pointer;">
             <option value="all">Todas</option>
@@ -892,21 +892,15 @@ function toast(msg) {
 // ── GAP ANALYSIS — Cults vs STLFlix ──
 async function runGapAnalysis() {
   const el = document.getElementById('gap-results');
-  el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Buscando no Cults3D...</div>';
+  const metaEl = document.getElementById('gap-meta');
+  el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Analisando com IA...</div>';
 
   if (!csvData.length) {
-    el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Importe a planilha STLFlix primeiro.</div>';
+    el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Importe a planilha STLFlix primeiro.</div>';
     return;
   }
 
-  const stlNames = csvData.map(p => (p.nome||'').toLowerCase());
-  const existsInSTL = nome => {
-    const words = nome.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-    return words.some(w => stlNames.some(n => n.includes(w)));
-  };
-
-  // busca múltiplos universos no Cults
-  const universes = ['organizer','lamp','dragon','fidget','plant','pet','keychain','stand'];
+  const universes = ['organizer','lamp','dragon','fidget','plant','pet','keychain','articulated','miniature','puzzle'];
   const term = universes[new Date().getDay() % universes.length];
 
   try {
@@ -914,34 +908,67 @@ async function runGapAnalysis() {
     const d = await r.json();
     const items = (d.results||[]).sort((a,b) => (b.downloads||0)-(a.downloads||0));
 
-    // separa os que têm gap
-    const gaps = items.filter(p => !existsInSTL(p.nome)).slice(0, 10);
-    const exists = items.filter(p => existsInSTL(p.nome)).slice(0, 3);
-
-    if (!gaps.length) {
-      el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Nenhum gap encontrado para este tema.</div>';
+    if (!items.length) {
+      el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Sem resultados do Cults.</div>';
       return;
     }
 
-    el.innerHTML = `<div style="font-size:10px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:10px;grid-column:1/-1;">TEMA: ${term.toUpperCase()} · ${gaps.length} gaps</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:10px;">
-        ${gaps.map((p,i) => `
-          <div style="background:var(--s2);border:0.5px solid #3d2000;border-radius:8px;overflow:hidden;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
-            <div style="aspect-ratio:1;overflow:hidden;background:#0a0a0a;position:relative;">
-              ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#333;padding:8px;text-align:center;">${p.nome}</div>`}
-              <span style="position:absolute;top:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>
-            </div>
-            <div style="padding:6px 8px 8px;">
-              <div style="font-size:9px;color:var(--m2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;">${p.nome}</div>
-              <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:#f0a030;">${p.downloads||0}</div>
-              <div style="font-size:7px;color:var(--m);">downloads · ${p.preco||''}</div>
-              <a href="${p.link}" target="_blank" style="font-size:8px;color:#f472b6;display:block;margin-top:3px;">cults3d.com →</a>
-            </div>
-          </div>`).join('')}
-      </div>
-      <div style="margin-top:10px;font-size:11px;color:#8aaa30;background:var(--lime-bg);border-radius:6px;padding:8px 12px;border-left:2px solid var(--lime-d);">
-        <strong style="color:var(--lime);">${gaps.length} produtos</strong> vendem bem no Cults3D no universo "<strong style="color:var(--lime);">${term}</strong>" e <strong style="color:var(--lime);">não existem no catálogo STLFlix</strong>. O mais baixado é "<strong style="color:var(--lime);">${gaps[0]?.nome}</strong>" com ${gaps[0]?.downloads||0} downloads.
-      </div>`;
+    // monta lista de nomes STLFlix e Cults para análise semântica via IA
+    const stlSample = csvData.slice(0,200).map(p=>p.nome).join(', ');
+    const cultsSample = items.slice(0,20).map(p=>p.nome).join(', ');
+
+    // análise semântica com Claude API
+    let gapIndices = [];
+    try {
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          system: 'Você é um analista de produtos de impressão 3D. Analise duas listas de produtos e identifique quais produtos do Cults3D não têm equivalente conceitual na STLFlix. Considere o conceito, categoria e função do produto, não apenas palavras exatas. Responda APENAS com uma lista de números separados por vírgula (índices 0-based dos produtos do Cults que são gaps reais). Exemplo: 0,2,5,8',
+          messages: [{
+            role: 'user',
+            content: `Produtos STLFlix (amostra): ${stlSample}
+
+Produtos Cults3D (analise estes, índice 0 a ${items.length-1}): ${cultsSample}
+
+Quais índices dos produtos Cults não têm equivalente conceitual na STLFlix?`
+          }]
+        })
+      });
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        const text = aiData.content?.[0]?.text || '';
+        gapIndices = text.match(/\d+/g)?.map(Number).filter(n => n < items.length) || [];
+      }
+    } catch(e) {
+      // fallback: mostra todos como possíveis gaps
+      gapIndices = items.map((_,i) => i);
+    }
+
+    const gaps = gapIndices.slice(0,8).map(i => items[i]).filter(Boolean);
+    if (metaEl) metaEl.textContent = `${gaps.length} gaps · tema: ${term}`;
+
+    if (!gaps.length) {
+      el.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">IA não identificou gaps claros para este tema — boa cobertura!</div>';
+      return;
+    }
+
+    el.innerHTML = `<div style="font-size:9px;color:var(--m);font-family:var(--mono);letter-spacing:.06em;margin-bottom:8px;grid-column:1/-1;">ANÁLISE IA · TEMA: ${term.toUpperCase()} · ${gaps.length} gaps identificados</div>` +
+      gaps.map((p,i) => `
+        <div class="prod-card" style="border-color:#3d2000;cursor:pointer;" onclick="window.open('${p.link}','_blank')">
+          <div class="prod-img" style="position:relative;">
+            ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="prod-img-ph">${p.nome}</div>`}
+            <span style="position:absolute;top:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>
+          </div>
+          <div class="prod-foot">
+            <div class="prod-name" title="${p.nome}">${p.nome}</div>
+            <div class="prod-num" style="color:#f0a030;">${p.downloads||0}</div>
+            <div class="prod-sub" style="color:#f472b6;font-size:8px;">${p.preco||''}</div>
+            <a class="prod-link" style="color:#f472b6;" href="${p.link}" target="_blank">cults3d.com →</a>
+          </div>
+        </div>`).join('');
   } catch(e) {
     el.innerHTML = `<div style="color:var(--m2);font-size:11px;">Erro: ${e.message}</div>`;
   }
@@ -1307,20 +1334,25 @@ function renderSeasonality() {
   const maxVal = Math.max(...Object.values(byMonth));
   const monthNames = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
 
+  const total = Object.values(byMonth).reduce((a,b)=>a+b,0);
   el.innerHTML = `
-    <div style="display:flex;align-items:flex-end;gap:6px;height:180px;padding-bottom:20px;position:relative;">
+    <div style="display:flex;align-items:flex-end;gap:4px;height:160px;padding-bottom:24px;position:relative;border-bottom:1px solid var(--b2);margin-bottom:8px;">
       ${months.map(m => {
         const val = byMonth[m] || 0;
-        const h = Math.round((val/maxVal)*150);
-        const label = monthNames[m.split('-')[1]] || m;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" title="${val.toLocaleString('pt-BR')} downloads">
-          <div style="font-family:var(--mono);font-size:8px;color:var(--lime);opacity:${val===maxVal?1:0.6};">${val>=1000?(val/1000).toFixed(0)+'K':val}</div>
-          <div style="width:100%;background:${val===maxVal?'var(--lime)':'#2a4a10'};border-radius:3px 3px 0 0;height:${h}px;min-height:2px;transition:height .3s;"></div>
-          <div style="font-size:8px;color:var(--m);margin-top:2px;">${label}</div>
+        const h = Math.max(Math.round((val/maxVal)*130), 2);
+        const label = monthNames[m.split('-')[1]] || m.split('-')[1];
+        const isMax = val === maxVal;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;" title="${val.toLocaleString('pt-BR')} downloads em ${label}">
+          <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:${isMax?'var(--lime)':'#5a8a30'};min-height:14px;">${val>=1000?(val/1000).toFixed(1)+'K':val}</div>
+          <div style="width:100%;background:${isMax?'var(--lime)':'#2a5a15'};border-radius:3px 3px 0 0;height:${h}px;min-height:2px;transition:height .4s;"></div>
+          <div style="font-size:9px;font-weight:500;color:${isMax?'var(--lime)':'var(--m3)'};margin-top:4px;">${label}</div>
         </div>`;
       }).join('')}
     </div>
-    <div style="font-size:9px;color:var(--m);text-align:right;margin-top:4px;">Total: ${Object.values(byMonth).reduce((a,b)=>a+b,0).toLocaleString('pt-BR')} downloads</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:10px;color:var(--m2);">Mês com mais downloads: <strong style="color:var(--lime);">${monthNames[months.find(m=>byMonth[m]===maxVal)?.split('-')[1]]||'—'}</strong></div>
+      <div style="font-size:10px;color:var(--m2);">Total: <strong style="color:var(--t);">${total.toLocaleString('pt-BR')}</strong> downloads</div>
+    </div>
   `;
 }
 
@@ -1361,47 +1393,36 @@ async function loadRedditInsights(period) {
   const meta = document.getElementById('reddit-meta');
   grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Carregando insights da comunidade...</div>';
 
-  const subreddits = ['3Dprinting','PrintedMinis','functionalprint'];
+  const t = period <= 7 ? 'week' : period <= 30 ? 'month' : 'year';
+  const subreddits = ['3Dprinting', 'PrintedMinis', 'functionalprint'];
   const allPosts = [];
 
   for (const sub of subreddits) {
     try {
-      const r = await fetch(
-        `https://www.reddit.com/r/${sub}/top.json?limit=25&t=${period<=7?'week':period<=30?'month':'year'}`,
-        {signal: AbortSignal.timeout(6000), headers: {'Accept':'application/json'}}
-      );
+      const r = await fetch(`/api/reddit?sub=${sub}&t=${t}&limit=25`, {signal: AbortSignal.timeout(8000)});
       if (!r.ok) continue;
       const d = await r.json();
-      const posts = (d?.data?.children || []).map(p => ({
-        title:   p.data.title,
-        score:   p.data.score,
-        comments:p.data.num_comments,
-        url:     'https://reddit.com' + p.data.permalink,
-        sub:     sub,
-        flair:   p.data.link_flair_text || '',
-        // classifica por tipo
-        tipo: classifyRedditPost(p.data.title, p.data.link_flair_text)
-      }));
-      allPosts.push(...posts);
+      allPosts.push(...(d.posts || []).map(p => ({...p,
+        tipo: classifyRedditPost(p.title, p.flair)
+      })));
     } catch(e) { continue; }
   }
 
   if (!allPosts.length) {
-    grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Sem dados do Reddit no momento. Tente novamente.</div>';
+    grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Sem dados do Reddit no momento.</div>';
     return;
   }
 
-  // separa em 3 colunas: pedidos de produto, técnicas em alta, mais engajamento
   const requests  = allPosts.filter(p=>p.tipo==='request').sort((a,b)=>b.score-a.score).slice(0,6);
   const technique = allPosts.filter(p=>p.tipo==='technique').sort((a,b)=>b.score-a.score).slice(0,6);
   const trending  = allPosts.sort((a,b)=>b.comments-a.comments).slice(0,6);
 
-  meta.textContent = `r/3Dprinting · r/PrintedMinis · r/functionalprint · ${allPosts.length} posts analisados`;
+  meta.textContent = `r/3Dprinting · r/PrintedMinis · r/functionalprint · ${allPosts.length} posts`;
 
   const renderCol = (title, color, posts, icon) => `
     <div style="background:var(--s);padding:14px;">
       <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:${color};letter-spacing:.08em;margin-bottom:10px;">${icon} ${title}</div>
-      ${posts.map(p=>`
+      ${posts.length ? posts.map(p=>`
         <a href="${p.url}" target="_blank" style="display:block;text-decoration:none;margin-bottom:8px;padding:8px 10px;background:var(--s2);border-radius:6px;border:0.5px solid var(--b2);transition:border-color .15s;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='var(--b2)'">
           <div style="font-size:10px;color:var(--t);line-height:1.4;margin-bottom:4px;">${p.title.substring(0,80)}${p.title.length>80?'...':''}</div>
           <div style="display:flex;gap:8px;">
@@ -1409,13 +1430,15 @@ async function loadRedditInsights(period) {
             <span style="font-size:9px;color:var(--m);">${p.comments} comentários</span>
             <span style="font-size:9px;color:var(--m);">r/${p.sub}</span>
           </div>
-        </a>`).join('')}
+        </a>`).join('') : `<div style="color:var(--m2);font-size:10px;">Sem posts nesta categoria.</div>`}
     </div>`;
 
-  grid.innerHTML = renderCol('Pedidos de produto', '#f0a030', requests.length ? requests : trending.slice(0,5), '📦')
-    + renderCol('Técnicas em alta', '#4a9eff', technique.length ? technique : trending.slice(0,5), '🔧')
-    + renderCol('Mais engajamento', '#3ddc84', trending, '🔥');
+  grid.innerHTML =
+    renderCol('📦 Pedidos de produto', '#f0a030', requests.length ? requests : trending.slice(0,4), '') +
+    renderCol('🔧 Técnicas em alta', '#4a9eff', technique.length ? technique : trending.slice(0,4), '') +
+    renderCol('🔥 Mais engajamento', '#3ddc84', trending, '');
 }
+
 
 function classifyRedditPost(title, flair) {
   const t = title.toLowerCase();
