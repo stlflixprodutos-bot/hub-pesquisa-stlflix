@@ -303,7 +303,11 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;">GAPS</span>
             <span style="font-size:11px;color:var(--m3);">Vendem no Cults · ausentes na STLFlix</span>
           </div>
-          <span style="font-size:10px;color:var(--m);" id="gap-meta">—</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input id="gap-term-input" placeholder="tema (ex: fidget, lamp...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:10px;padding:4px 8px;outline:none;width:140px;" onkeydown="if(event.key==='Enter')runGapAnalysis()">
+            <button class="btn" onclick="runGapAnalysis()" style="font-size:10px;padding:3px 10px;">Buscar</button>
+            <span style="font-size:10px;color:var(--m);" id="gap-meta">—</span>
+          </div>
         </div>
         <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;" id="gap-results">
           <div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>
@@ -357,14 +361,6 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 <!-- TAB BUSCA -->
 <div class="tab-pane" id="tab-busca"></div>
 
-<!-- Explorador de termos — abaixo dos chips -->
-<div id="wc-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:12px 24px;display:none;">
-  <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;margin-bottom:8px;">
-    🔍 TERMOS RELACIONADOS — clique para buscar no Cults · 📌 = abre no Pinterest
-  </div>
-  <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;"></div>
-  <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;margin-top:4px;line-height:1.5;"></div>
-</div>
 
 <div class="layout">
   <div class="sidebar">
@@ -452,6 +448,15 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
         <button class="expand-btn" id="expand-grid-etsy" onclick="toggleExpand('grid-etsy')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
 
       </div>
+
+    <!-- Termos relacionados — aparece após a busca -->
+    <div id="wc-bar" style="display:none;background:var(--s);border:0.5px solid var(--b2);border-radius:10px;padding:14px 18px;margin-top:16px;">
+      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;margin-bottom:10px;">
+        🔍 TERMOS RELACIONADOS — clique no termo para buscar · 📌 abre no Pinterest
+      </div>
+      <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;line-height:1.5;"></div>
+    </div>
 
     </div>
   </div>
@@ -700,6 +705,9 @@ function renderAll(kw) {
   // intel
   document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
   document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, tv, cults, etsy);
+  // sincroniza campo de tema do gap com a última busca
+  const gapInput = document.getElementById('gap-term-input');
+  if (gapInput && kw) gapInput.value = kw;
 
   // STLFlix
   renderGrid('grid-stl', stl, 'stl');
@@ -984,8 +992,11 @@ async function runGapAnalysis() {
     return;
   }
 
+  // usa: 1) termo digitado no campo, 2) última busca feita, 3) rotação por dia da semana
+  const inputEl = document.getElementById('gap-term-input');
   const universes = ['organizer','lamp','dragon','fidget','plant','pet','keychain','articulated','miniature','puzzle'];
-  const term = universes[new Date().getDay() % universes.length];
+  const term = (inputEl?.value.trim()) || lastKw || universes[new Date().getDay() % universes.length];
+  if (inputEl && !inputEl.value.trim() && lastKw) inputEl.value = lastKw;
 
   try {
     const r = await fetch(`/api/cults?q=${encodeURIComponent(term)}&paid=true`, {signal: AbortSignal.timeout(10000)});
@@ -1112,6 +1123,7 @@ function showWordCloudBar(kw) {
 
   renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, combined, fromEtsy);
   bar.style.display = 'block';
+  bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function getLocalTerms(kw) {
