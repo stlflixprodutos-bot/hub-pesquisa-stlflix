@@ -386,7 +386,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
       <div class="empty-wrap">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="21" cy="21" r="14" stroke="#555" stroke-width="2"/><path d="M32 32L42 42" stroke="#555" stroke-width="2" stroke-linecap="round"/><path d="M16 21h10M21 16v10" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
         <div class="empty-title">Digite uma palavra-chave para começar</div>
-        <div class="empty-sub">Busca simultânea em STLFlix, YouTube e Cults3D</div>
+        <div class="empty-sub">Busca simultânea em STLFlix e Cults3D</div>
       </div>
     </div>
 
@@ -919,9 +919,6 @@ async function runGapAnalysis() {
 
 
 // fechar modal clicando fora do player
-document.getElementById('yt-modal').addEventListener('click', e => {
-  if (e.target.id === 'yt-modal') closeYTModal();
-});
 
 function toggleExpand(gridId) {
   const grid = document.getElementById(gridId);
@@ -1104,20 +1101,6 @@ function switchTab(name, btn) {
 }
 
 // ── DASHBOARD DE INTELIGÊNCIA ──
-async function runIntelDashboard() {
-  const period = parseInt(document.getElementById('intel-period')?.value || '30');
-  document.getElementById('intel-date').textContent =
-    'Atualizado: ' + new Date().toLocaleString('pt-BR', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
-
-  analyzeSTLCategories(period);
-  renderSeasonality();
-  loadCultsAscending();
-  runGapAnalysis();
-  loadThingiverse();
-  renderTrendsLinks();
-}
-
-// ── SUBCATEGORIAS REAIS STLFLIX ──
 const STL_CATEGORIES = [
   { label:'Fidgets',             color:'#2dd4bf', cat:'toys', keywords:['fidget','spinner','clicker','haptic','stress','anxiety','sensory'] },
   { label:'RPG Accessories',     color:'#b08fff', cat:'toys', keywords:['dice','rpg','dungeon','spell','token','condition','initiative','dnd'] },
@@ -1145,6 +1128,22 @@ const STL_CATEGORIES = [
   { label:'Jewelry & Keychains', color:'#e879f9', cat:'costume', keywords:['ring','earring','bracelet','necklace','keychain','pendant','jewelry','badge'] },
   { label:'Masks & Accessories', color:'#d946ef', cat:'costume', keywords:['mask','crown','tiara','brooch','pin','clip','hair','headband'] },
 ];
+
+
+async function runIntelDashboard() {
+  const period = parseInt(document.getElementById('intel-period')?.value || '30');
+  document.getElementById('intel-date').textContent =
+    'Atualizado: ' + new Date().toLocaleString('pt-BR', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+
+  analyzeSTLCategories(period);
+  renderSeasonality();
+  loadCultsAscending();
+  runGapAnalysis();
+  loadThingiverse();
+  renderTrendsLinks();
+}
+
+// ── SUBCATEGORIAS REAIS STLFLIX ──
 
 function analyzeSTLCategories(period) {
   const el = document.getElementById('intel-categories');
