@@ -15,7 +15,7 @@
   --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
 }
 body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
- 
+
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--lime);letter-spacing:.1em;}
 .logo em{color:var(--m2);font-weight:400;}
@@ -222,77 +222,124 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 
 <!-- TAB INTELIGÊNCIA -->
 <div class="tab-pane active" id="tab-intel">
-  <div style="padding:20px 24px;max-width:1100px;">
+  <div style="padding:20px 24px;max-width:1200px;">
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
       <div>
         <div style="font-size:14px;font-weight:500;color:var(--t);margin-bottom:3px;">Central de Inteligência</div>
-        <div style="font-size:11px;color:var(--m2);" id="intel-date">Clique em "Atualizar análise" para começar.</div>
+        <div style="font-size:11px;color:var(--m2);" id="intel-date">Carregando...</div>
       </div>
-      <button class="btn primary" onclick="runIntelDashboard()">Atualizar análise</button>
-    </div>
-
-    <!-- Categorias STLFlix -->
-    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:10px;">
-        <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);">STLFlix</span>
-        <span style="font-size:11px;font-weight:500;color:var(--m3);">Categorias em alta — análise do catálogo</span>
-      </div>
-      <div style="padding:14px 16px;" id="intel-categories">
-        <div style="color:var(--m2);font-size:11px;">Clique em "Atualizar análise" para gerar.</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:10px;color:var(--m);">Período:</span>
+        <select id="intel-period" onchange="runIntelDashboard()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;cursor:pointer;">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="365">Todo 2026</option>
+        </select>
+        <button class="btn primary" onclick="runIntelDashboard()">↺ Atualizar</button>
       </div>
     </div>
 
-    <!-- Cults em ascensão + Gaps lado a lado -->
+    <!-- Linha 1: Categorias STLFlix + Sazonalidade -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
 
-      <!-- Cults -->
+      <!-- Categorias por subcategoria real -->
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:var(--lime-bg2);color:var(--lime);border:0.5px solid var(--lime-d);">STLFlix</span>
+          <span style="font-size:11px;font-weight:500;color:var(--m3);">Subcategorias — volume de downloads</span>
+        </div>
+        <div style="padding:14px 16px;max-height:320px;overflow-y:auto;" id="intel-categories">
+          <div style="color:var(--m2);font-size:11px;">Carregando...</div>
+        </div>
+      </div>
+
+      <!-- Sazonalidade — gráfico de linha -->
+      <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#001a10;color:#3ddc84;border:0.5px solid #003d1a;">SAZONALIDADE</span>
+            <span style="font-size:11px;color:var(--m3);">Downloads por mês · 2026</span>
+          </div>
+          <select id="season-cat" onchange="renderSeasonality()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:4px;color:var(--t);font-family:var(--sans);font-size:10px;padding:3px 8px;outline:none;cursor:pointer;">
+            <option value="all">Todas</option>
+            <option value="toys">Toys & Tabletop</option>
+            <option value="gadgets">Gadgets</option>
+            <option value="household">Household</option>
+            <option value="seasonal">Seasonal</option>
+            <option value="art">Art</option>
+            <option value="costume">Costume & Accessories</option>
+          </select>
+        </div>
+        <div style="padding:14px 16px;" id="seasonality-chart">
+          <div style="color:var(--m2);font-size:11px;">Carregando...</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Linha 2: Cults em ascensão + Gaps -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+
       <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
         <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0010;color:#f472b6;border:0.5px solid #3d0028;">Cults3D</span>
-            <span style="font-size:11px;color:var(--m3);">Em ascensão</span>
+            <span style="font-size:11px;color:var(--m3);">Modelos pagos em alta</span>
           </div>
           <span style="font-size:10px;color:var(--m);" id="cults-ascend-meta">—</span>
         </div>
-        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;" id="intel-cults-grid">
-          <div style="color:var(--m2);font-size:11px;padding:8px;grid-column:1/-1;">Clique em "Atualizar análise".</div>
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;" id="intel-cults-grid">
+          <div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>
         </div>
       </div>
 
-      <!-- Gaps -->
       <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;overflow:hidden;">
         <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0800;color:#f0a030;border:0.5px solid #3d2000;">GAPS</span>
-            <span style="font-size:11px;color:var(--m3);">Ausentes na STLFlix</span>
+            <span style="font-size:11px;color:var(--m3);">Vendem no Cults · ausentes na STLFlix</span>
           </div>
-          <button class="btn" onclick="runGapAnalysis()" style="font-size:10px;padding:3px 10px;">Analisar</button>
+          <span style="font-size:10px;color:var(--m);" id="gap-meta">—</span>
         </div>
-        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;" id="gap-results">
-          <div style="color:var(--m2);font-size:11px;padding:8px;grid-column:1/-1;">Clique em "Analisar" para cruzar Cults com o catálogo STLFlix.</div>
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;" id="gap-results">
+          <div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>
         </div>
       </div>
 
     </div>
 
-    <!-- Radar YouTube -->
+    <!-- Linha 3: Reddit insights -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0500;color:#ff6314;border:0.5px solid #3d1200;">Reddit</span>
+          <span style="font-size:11px;color:var(--m3);">Pedidos e tendências da comunidade 3D</span>
+        </div>
+        <span style="font-size:10px;color:var(--m);" id="reddit-meta">r/3Dprinting · r/PrintedMinis · r/functionalprint</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--b);" id="reddit-grid">
+        <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Carregando insights da comunidade...</div>
+      </div>
+    </div>
+
+    <!-- Linha 4: Radar YouTube -->
     <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
       <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0000;color:var(--red);border:0.5px solid #3d0000;">YOUTUBE</span>
-          <span style="font-size:11px;font-weight:500;color:var(--m3);">Radar de vídeos — universo maker 3D</span>
+          <span style="font-size:11px;color:var(--m3);">Vídeos mais assistidos — universo maker 3D</span>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input id="radar-yt-input" placeholder="tema (ex: fidget, lamp, dragon...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;width:200px;" onkeydown="if(event.key==='Enter')runYTRadar()">
-          <button class="btn primary" onclick="runYTRadar()" style="font-size:10px;padding:4px 12px;">Buscar vídeos</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="radar-yt-input" placeholder="tema (fidget, lamp, dragon...)" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;width:180px;" onkeydown="if(event.key==='Enter')runYTRadar()">
+          <button class="btn primary" onclick="runYTRadar()" style="font-size:10px;padding:4px 12px;">Buscar</button>
           <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="yt-radar-meta"></span>
         </div>
       </div>
       <div id="yt-radar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--b);">
-        <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">
-          Digite um tema e clique em "Buscar vídeos".
-        </div>
+        <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Digite um tema e clique em "Buscar".</div>
       </div>
     </div>
 
@@ -1154,64 +1201,144 @@ function switchTab(name, btn) {
 
 // ── DASHBOARD DE INTELIGÊNCIA ──
 async function runIntelDashboard() {
+  const period = parseInt(document.getElementById('intel-period')?.value || '30');
   document.getElementById('intel-date').textContent =
-    'Última análise: ' + new Date().toLocaleString('pt-BR', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
-  analyzeSTLCategories();
+    'Atualizado: ' + new Date().toLocaleString('pt-BR', {weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+
+  analyzeSTLCategories(period);
+  renderSeasonality();
   loadCultsAscending();
+  runGapAnalysis();
+  loadRedditInsights(period);
 }
 
-function analyzeSTLCategories() {
+// ── SUBCATEGORIAS REAIS STLFLIX ──
+const STL_CATEGORIES = [
+  { label:'Fidgets',             color:'#2dd4bf', cat:'toys', keywords:['fidget','spinner','clicker','haptic','stress','anxiety','sensory'] },
+  { label:'RPG Accessories',     color:'#b08fff', cat:'toys', keywords:['dice','rpg','dungeon','spell','token','condition','initiative','dnd'] },
+  { label:'Articulated Toys',    color:'#a78bfa', cat:'toys', keywords:['articulated','flexi','flexible','print-in-place','movable','dragon','snake','fish'] },
+  { label:'Miniatures',          color:'#818cf8', cat:'toys', keywords:['miniature','mini','bust','figure','statue','figurine','character'] },
+  { label:'Puzzle & Brain',      color:'#6366f1', cat:'toys', keywords:['puzzle','brain','teaser','maze','trick','impossible','interlocking'] },
+  { label:'Tabletop Games',      color:'#4f46e5', cat:'toys', keywords:['tabletop','board','game','card','token','meeple','score'] },
+  { label:'Desk Organizers',     color:'#4a9eff', cat:'gadgets', keywords:['desk','organizer','holder','stand','cable','monitor','headphone','pen'] },
+  { label:'Portable Devices',    color:'#38bdf8', cat:'gadgets', keywords:['phone','tablet','watch','earphone','charger','mount','case','dock'] },
+  { label:'Computer Accessories',color:'#0ea5e9', cat:'gadgets', keywords:['keyboard','mouse','webcam','microphone','speaker','pc','computer'] },
+  { label:'Smart Accessories',   color:'#0284c7', cat:'gadgets', keywords:['smart','alexa','google','assistant','hub','remote','controller'] },
+  { label:'Lights & Vases',      color:'#f0a030', cat:'household', keywords:['lamp','light','luminaria','glow','neon','led','vase','shade'] },
+  { label:'Kitchen Accessories', color:'#fb923c', cat:'household', keywords:['kitchen','spice','knife','bottle','cup','mug','coffee','utensil','cook'] },
+  { label:'Bathroom',            color:'#f97316', cat:'household', keywords:['bathroom','soap','toothbrush','toilet','shower','bath'] },
+  { label:'Wall Decorations',    color:'#ea580c', cat:'household', keywords:['wall','frame','photo','picture','decor','shelf','hook','coat'] },
+  { label:'Halloween',           color:'#7c3aed', cat:'seasonal', keywords:['halloween','skull','skeleton','ghost','witch','pumpkin','bat','zombie'] },
+  { label:'Christmas',           color:'#dc2626', cat:'seasonal', keywords:['christmas','xmas','santa','reindeer','ornament','tree','snowflake','elf'] },
+  { label:'Valentine',           color:'#db2777', cat:'seasonal', keywords:['valentine','heart','love','rose','cupid','romantic'] },
+  { label:'Easter & Other',      color:'#65a30d', cat:'seasonal', keywords:['easter','egg','bunny','mothers','fathers','birthday','wedding'] },
+  { label:'Sculptures & Busts',  color:'#f87171', cat:'art', keywords:['sculpture','bust','portrait','bust','head','face','artist','classical'] },
+  { label:'Articulated Animals', color:'#fca5a5', cat:'art', keywords:['articulated animal','creature','monster','beast','wolf','bear','lion'] },
+  { label:'Kinetic & Toyart',    color:'#fecaca', cat:'art', keywords:['kinetic','toyart','chibi','kawaii','cute','cartoon','stylized'] },
+  { label:'Wall Art',            color:'#fee2e2', cat:'art', keywords:['wall art','geometric','mandala','abstract','pattern','panel'] },
+  { label:'Cosplay Props',       color:'#c084fc', cat:'costume', keywords:['cosplay','prop','sword','shield','armor','helmet','costume','weapon'] },
+  { label:'Jewelry & Keychains', color:'#e879f9', cat:'costume', keywords:['ring','earring','bracelet','necklace','keychain','pendant','jewelry','badge'] },
+  { label:'Masks & Accessories', color:'#d946ef', cat:'costume', keywords:['mask','crown','tiara','brooch','pin','clip','hair','headband'] },
+];
+
+function analyzeSTLCategories(period) {
   const el = document.getElementById('intel-categories');
   if (!csvData.length) {
     el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Importe a planilha STLFlix primeiro.</div>';
     return;
   }
-  const universes = [
-    { label:'RPG & Jogos',        color:'#b08fff', keywords:['rpg','dice','dragon','dungeon','wizard','knight','sword','shield','fantasy','castle','miniature'] },
-    { label:'Organização',        color:'#4a9eff', keywords:['organizer','holder','stand','rack','mount','storage','box','tray','hook','clip','desk','shelf','cable'] },
-    { label:'Luminárias',         color:'#f0a030', keywords:['lamp','light','luminaria','glow','neon','led','candle','lantern','shade','nightlight'] },
-    { label:'Plantas & Garden',   color:'#3ddc84', keywords:['plant','planter','vase','pot','garden','flower','succulent','herb','seed'] },
-    { label:'Pets',               color:'#f472b6', keywords:['cat','dog','pet','bird','fish','hamster','rabbit','paw','bowl','feeder'] },
-    { label:'Cozinha',            color:'#facc15', keywords:['kitchen','spice','knife','bottle','cup','mug','coffee','utensil','cook'] },
-    { label:'Fidget & Brinquedo', color:'#2dd4bf', keywords:['fidget','spinner','puzzle','toy','game','articulated','flexi','flexible'] },
-    { label:'Decoração',          color:'#f87171', keywords:['decor','art','figure','statue','bust','sculpture','frame','wall','geometric','mandala'] },
-    { label:'Moda & Acessórios',  color:'#fb923c', keywords:['ring','earring','bracelet','necklace','keychain','badge','jewelry','accessory'] },
-    { label:'Tech & Maker',       color:'#a78bfa', keywords:['raspberry','arduino','electronics','case','enclosure','adapter','filament','spool'] },
-  ];
-  const results = universes.map(u => {
-    const matched = csvData.filter(p => { const n=(p.nome||'').toLowerCase(); return u.keywords.some(k=>n.includes(k)); });
-    const totalDl = matched.reduce((s,p)=>s+(p.numRaw||p.downloads||0),0);
-    const avgDl = matched.length ? Math.round(totalDl/matched.length) : 0;
-    return {...u, count:matched.length, totalDl, avgDl, top:matched.sort((a,b)=>(b.numRaw||0)-(a.numRaw||0))[0]};
+
+  const results = STL_CATEGORIES.map(u => {
+    const matched = csvData.filter(p => {
+      const n = (p.nome||'').toLowerCase();
+      return u.keywords.some(k => n.includes(k));
+    });
+    const totalDl = matched.reduce((s,p)=>s+(p.numRaw||0),0);
+    const top = matched.sort((a,b)=>(b.numRaw||0)-(a.numRaw||0))[0];
+    return {...u, count:matched.length, totalDl, top};
   }).filter(u=>u.count>0).sort((a,b)=>b.totalDl-a.totalDl);
-  const maxTotal = results[0]?.totalDl||1;
+
+  const maxTotal = results[0]?.totalDl || 1;
+
   el.innerHTML = results.map(u=>`
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;cursor:pointer;"
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;"
       onclick="document.getElementById('kw').value='${u.keywords[0]}';switchTab('busca',document.getElementById('tab-btn-busca'));doSearch()">
-      <div style="min-width:150px;font-size:11px;color:var(--m3);">${u.label}</div>
-      <div style="flex:1;background:var(--b2);border-radius:2px;height:6px;overflow:hidden;">
-        <div style="height:6px;border-radius:2px;background:${u.color};width:${Math.round(u.totalDl/maxTotal*100)}%;"></div>
+      <div style="min-width:130px;font-size:10px;color:var(--m3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.label}</div>
+      <div style="flex:1;background:var(--b2);border-radius:2px;height:5px;overflow:hidden;">
+        <div style="height:5px;border-radius:2px;background:${u.color};width:${Math.round(u.totalDl/maxTotal*100)}%;"></div>
       </div>
-      <div style="font-family:var(--mono);font-size:10px;color:${u.color};min-width:60px;text-align:right;">${u.totalDl.toLocaleString('pt-BR')}</div>
-      <div style="font-size:9px;color:var(--m);min-width:70px;">${u.count} produtos</div>
-      ${u.top?`<div style="font-size:9px;color:var(--m2);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">↑ ${u.top.nome}</div>`:''}
+      <div style="font-family:var(--mono);font-size:10px;color:${u.color};min-width:55px;text-align:right;">${u.totalDl.toLocaleString('pt-BR')}</div>
+      <div style="font-size:9px;color:var(--m);min-width:50px;">${u.count} itens</div>
     </div>`).join('');
 }
 
+// ── SAZONALIDADE — gráfico de barras por mês ──
+function renderSeasonality() {
+  const el = document.getElementById('seasonality-chart');
+  const catFilter = document.getElementById('season-cat')?.value || 'all';
+  if (!csvData.length) { el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Importe a planilha STLFlix.</div>'; return; }
+
+  const catMap = {
+    toys:['fidget','dice','rpg','articulated','flexi','puzzle','miniature','tabletop','dragon','game'],
+    gadgets:['desk','organizer','holder','stand','phone','tablet','cable','monitor','headphone','keyboard','mouse'],
+    household:['lamp','light','vase','kitchen','spice','knife','bottle','mug','bathroom','wall','shelf'],
+    seasonal:['halloween','christmas','xmas','valentine','easter','mothers','fathers','skull','santa'],
+    art:['sculpture','bust','kinetic','toyart','wall art','geometric','mandala','articulated animal'],
+    costume:['cosplay','ring','earring','keychain','mask','crown','jewelry','bracelet','necklace'],
+  };
+
+  const filtered = catFilter === 'all' ? csvData :
+    csvData.filter(p => {
+      const n=(p.nome||'').toLowerCase();
+      return (catMap[catFilter]||[]).some(k=>n.includes(k));
+    });
+
+  // agrupa por mês
+  const byMonth = {};
+  filtered.forEach(p => {
+    const m = (p.data||'').substring(0,7);
+    if (!m) return;
+    byMonth[m] = (byMonth[m]||0) + (p.numRaw||0);
+  });
+
+  const months = Object.keys(byMonth).sort();
+  if (!months.length) { el.innerHTML = '<div style="color:var(--m2);font-size:11px;">Sem dados para o período.</div>'; return; }
+
+  const maxVal = Math.max(...Object.values(byMonth));
+  const monthNames = {'01':'Jan','02':'Fev','03':'Mar','04':'Abr','05':'Mai','06':'Jun','07':'Jul','08':'Ago','09':'Set','10':'Out','11':'Nov','12':'Dez'};
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:6px;height:180px;padding-bottom:20px;position:relative;">
+      ${months.map(m => {
+        const val = byMonth[m] || 0;
+        const h = Math.round((val/maxVal)*150);
+        const label = monthNames[m.split('-')[1]] || m;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;" title="${val.toLocaleString('pt-BR')} downloads">
+          <div style="font-family:var(--mono);font-size:8px;color:var(--lime);opacity:${val===maxVal?1:0.6};">${val>=1000?(val/1000).toFixed(0)+'K':val}</div>
+          <div style="width:100%;background:${val===maxVal?'var(--lime)':'#2a4a10'};border-radius:3px 3px 0 0;height:${h}px;min-height:2px;transition:height .3s;"></div>
+          <div style="font-size:8px;color:var(--m);margin-top:2px;">${label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:9px;color:var(--m);text-align:right;margin-top:4px;">Total: ${Object.values(byMonth).reduce((a,b)=>a+b,0).toLocaleString('pt-BR')} downloads</div>
+  `;
+}
+
+// ── CULTS ASCENSÃO ──
 async function loadCultsAscending() {
   const grid = document.getElementById('intel-cults-grid');
   const meta = document.getElementById('cults-ascend-meta');
-  grid.innerHTML = '<div style="color:var(--m2);font-size:11px;padding:8px;">Carregando...</div>';
-  const hotTerms = ['fidget','organizer','lamp','dragon','pet','plant','keychain','stand','flexi'];
+  grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Carregando...</div>';
+  const hotTerms = ['fidget','organizer','lamp','dragon','pet','plant','keychain','stand','flexi','miniature','puzzle'];
   const term = hotTerms[new Date().getDay() % hotTerms.length];
   try {
     const r = await fetch('/api/cults?q='+encodeURIComponent(term)+'&paid=true', {signal:AbortSignal.timeout(10000)});
     const d = await r.json();
-    const items = (d.results||[]).sort((a,b)=>(b.downloads||0)-(a.downloads||0)).slice(0,15);
-    meta.textContent = items.length + ' modelos · tema: ' + term + ' · agora';
-    if (!items.length) { grid.innerHTML = '<div style="color:var(--m2);font-size:11px;padding:8px;">Sem dados.</div>'; return; }
+    const items = (d.results||[]).sort((a,b)=>(b.downloads||0)-(a.downloads||0)).slice(0,12);
+    meta.textContent = items.length + ' · tema: ' + term;
+    if (!items.length) { grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Sem dados.</div>'; return; }
     grid.innerHTML = items.map((p,i)=>`
-      <div class="prod-card${i===0?' top':''}" style="flex:0 0 140px;min-width:140px;" onclick="window.open('${p.link}','_blank')">
+      <div class="prod-card${i===0?' top':''}" onclick="window.open('${p.link}','_blank')">
         <div class="prod-img">
           ${p.imagem?`<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<div class="prod-img-ph">${p.nome}</div>`}
           ${i===0?'<span class="prod-badge">1º</span>':''}
@@ -1224,13 +1351,83 @@ async function loadCultsAscending() {
         </div>
       </div>`).join('');
   } catch(e) {
-    grid.innerHTML = '<div style="color:var(--m2);font-size:11px;padding:8px;">Erro: '+e.message+'</div>';
+    grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;">Erro ao carregar.</div>';
   }
+}
+
+// ── REDDIT INSIGHTS ──
+async function loadRedditInsights(period) {
+  const grid = document.getElementById('reddit-grid');
+  const meta = document.getElementById('reddit-meta');
+  grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Carregando insights da comunidade...</div>';
+
+  const subreddits = ['3Dprinting','PrintedMinis','functionalprint'];
+  const allPosts = [];
+
+  for (const sub of subreddits) {
+    try {
+      const r = await fetch(
+        `https://www.reddit.com/r/${sub}/top.json?limit=25&t=${period<=7?'week':period<=30?'month':'year'}`,
+        {signal: AbortSignal.timeout(6000), headers: {'Accept':'application/json'}}
+      );
+      if (!r.ok) continue;
+      const d = await r.json();
+      const posts = (d?.data?.children || []).map(p => ({
+        title:   p.data.title,
+        score:   p.data.score,
+        comments:p.data.num_comments,
+        url:     'https://reddit.com' + p.data.permalink,
+        sub:     sub,
+        flair:   p.data.link_flair_text || '',
+        // classifica por tipo
+        tipo: classifyRedditPost(p.data.title, p.data.link_flair_text)
+      }));
+      allPosts.push(...posts);
+    } catch(e) { continue; }
+  }
+
+  if (!allPosts.length) {
+    grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Sem dados do Reddit no momento. Tente novamente.</div>';
+    return;
+  }
+
+  // separa em 3 colunas: pedidos de produto, técnicas em alta, mais engajamento
+  const requests  = allPosts.filter(p=>p.tipo==='request').sort((a,b)=>b.score-a.score).slice(0,6);
+  const technique = allPosts.filter(p=>p.tipo==='technique').sort((a,b)=>b.score-a.score).slice(0,6);
+  const trending  = allPosts.sort((a,b)=>b.comments-a.comments).slice(0,6);
+
+  meta.textContent = `r/3Dprinting · r/PrintedMinis · r/functionalprint · ${allPosts.length} posts analisados`;
+
+  const renderCol = (title, color, posts, icon) => `
+    <div style="background:var(--s);padding:14px;">
+      <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:${color};letter-spacing:.08em;margin-bottom:10px;">${icon} ${title}</div>
+      ${posts.map(p=>`
+        <a href="${p.url}" target="_blank" style="display:block;text-decoration:none;margin-bottom:8px;padding:8px 10px;background:var(--s2);border-radius:6px;border:0.5px solid var(--b2);transition:border-color .15s;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='var(--b2)'">
+          <div style="font-size:10px;color:var(--t);line-height:1.4;margin-bottom:4px;">${p.title.substring(0,80)}${p.title.length>80?'...':''}</div>
+          <div style="display:flex;gap:8px;">
+            <span style="font-size:9px;color:${color};">↑ ${p.score.toLocaleString()}</span>
+            <span style="font-size:9px;color:var(--m);">${p.comments} comentários</span>
+            <span style="font-size:9px;color:var(--m);">r/${p.sub}</span>
+          </div>
+        </a>`).join('')}
+    </div>`;
+
+  grid.innerHTML = renderCol('Pedidos de produto', '#f0a030', requests.length ? requests : trending.slice(0,5), '📦')
+    + renderCol('Técnicas em alta', '#4a9eff', technique.length ? technique : trending.slice(0,5), '🔧')
+    + renderCol('Mais engajamento', '#3ddc84', trending, '🔥');
+}
+
+function classifyRedditPost(title, flair) {
+  const t = title.toLowerCase();
+  if (/anyone.*(model|design|file)|looking for|where.*find|need.*stl|request|help me find|does.*exist/i.test(title)) return 'request';
+  if (/multicolor|multi-color|bambu|orca|slicer|support|infill|layer|filament|material|tpu|petg|resin|technique|trick|tip|method/i.test(title)) return 'technique';
+  return 'trending';
 }
 
 // ── NUVEM DE PALAVRAS ──
 
 function runWordCloud() {
+
   const input = document.getElementById('word-cloud-input').value.trim().toLowerCase();
   if (!input) return;
   let terms = SEMANTIC_MAP[input] || [];
