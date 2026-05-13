@@ -13,7 +13,7 @@
   --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
   --red:#ff4444;--green:#3ddc84;--blue:#4a9eff;
   --mono:'Space Mono',monospace;--sans:'DM Sans',system-ui,sans-serif;
-} 
+}
 body{background:var(--bg);color:var(--t);font-family:var(--sans);font-size:13px;}
 
 .topbar{background:var(--s);border-bottom:1px solid var(--b);padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
@@ -1479,40 +1479,6 @@ function classifyRedditPost(title, flair) {
 }
 
 // ── NUVEM DE PALAVRAS ──
-
-function runWordCloud() {
-
-  const input = document.getElementById('word-cloud-input').value.trim().toLowerCase();
-  if (!input) return;
-  let terms = SEMANTIC_MAP[input] || [];
-  if (!terms.length) {
-    for (const [key,vals] of Object.entries(SEMANTIC_MAP)) {
-      if (input.includes(key) || key.includes(input.split(' ')[0])) terms=[...terms,...vals];
-    }
-  }
-  terms = [...new Set(terms)];
-  if (!terms.length) {
-    terms = [input+' 3d print',input+' maker',input+' miniature',input+' organizer',input+' holder',input+' modular',input+' geometric',input+' articulated'];
-  }
-  const tagsEl = document.getElementById('word-cloud-tags');
-  const pinterestEl = document.getElementById('wc-bar-pinterest');
-  const insightEl = document.getElementById('word-cloud-insight');
-  tagsEl.innerHTML = terms.map(t=>`
-    <span style="background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--m3);cursor:pointer;"
-      onmouseover="this.style.borderColor='var(--lime-d)';this.style.color='var(--lime)'"
-      onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--m3)'"
-      onclick="document.getElementById('kw').value='${t}';switchTab('busca',document.getElementById('tab-btn-busca'));doSearch()">
-      ${t}</span>`).join('');
-  pinterestEl.innerHTML = terms.slice(0,5).map(t=>`
-    <a href="https://pinterest.com/search/pins/?q=${encodeURIComponent(t+' 3d print')}" target="_blank"
-       style="background:#1a0010;border:0.5px solid #3d0028;border-radius:20px;padding:5px 12px;font-size:11px;color:#f472b6;text-decoration:none;">
-      📌 ${t}</a>`).join('');
-  const hasMatch = !!SEMANTIC_MAP[input];
-  insightEl.innerHTML = hasMatch
-    ? '"<strong>'+input+'</strong>" conecta com <strong>'+terms.length+' termos</strong> do universo 3D. Explore primeiro: <strong>'+terms.slice(0,3).join('</strong>, <strong>')+'</strong>. Clique em qualquer termo para buscar nas plataformas.'
-    : '"<strong>'+input+'</strong>" não tem correspondência direta — geramos <strong>'+terms.length+' variações</strong> por proximidade. Explore <strong>'+terms[0]+'</strong> como ponto de partida no Pinterest.';
-  document.getElementById('word-cloud-result').style.display='block';
-}
 
 // ── CONFLUÊNCIA ──
 function runConfluence() {
