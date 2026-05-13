@@ -216,6 +216,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <span class="chip-label">FONTES</span>
     <div class="chip c-stl" data-src="stl" onclick="toggleChip(this)">STLFlix</div>
     <div class="chip c-cults" data-src="cults" onclick="toggleChip(this)">Cults3D</div>
+    <div class="chip" data-src="tv" onclick="toggleChip(this)" style="background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</div>
   </div>
 </div>
 
@@ -377,6 +378,7 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
     <div class="sb-sec" style="margin-top:8px;">Contagem</div>
     <div class="sb-item"><div class="sb-dot" style="background:var(--lime)"></div><span class="sb-label">STLFlix</span><span class="sb-count" id="cnt-stl">—</span></div>
     <div class="sb-item"><div class="sb-dot" style="background:#f472b6"></div><span class="sb-label">Cults3D</span><span class="sb-count" id="cnt-cults">—</span></div>
+    <div class="sb-item"><div class="sb-dot" style="background:#5bc8f5"></div><span class="sb-label">Thingiverse</span><span class="sb-count" id="cnt-tv">—</span></div>
   </div>
 
   <div class="main">
@@ -428,8 +430,19 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
           <span class="src-meta" id="meta-cults">—</span>
           <div class="src-line"></div>
         </div>
-        <div class="prod-grid scroll collapsed" id="grid-cults"></div>
+        <div class="prod-grid collapsed" id="grid-cults"></div>
         <button class="expand-btn" id="expand-grid-cults" onclick="toggleExpand('grid-cults')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
+      </div>
+
+      <!-- Thingiverse -->
+      <div class="src-section" id="sec-tv">
+        <div class="src-head">
+          <span class="src-tag" style="background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</span>
+          <span class="src-meta" id="meta-tv">—</span>
+          <div class="src-line"></div>
+        </div>
+        <div class="prod-grid collapsed" id="grid-tv"></div>
+        <button class="expand-btn" id="expand-grid-tv" onclick="toggleExpand('grid-tv')" style="display:none;margin-top:8px;width:100%;background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--m2);font-family:var(--sans);font-size:11px;padding:7px;cursor:pointer;">Ver mais ↓</button>
       </div>
 
     </div>
@@ -473,7 +486,7 @@ let csvData   = JSON.parse(localStorage.getItem('stlflix_csv') || '[]');
 let csvTs     = parseInt(localStorage.getItem('stlflix_csv_ts') || '0');
 let lastKw    = '';
 let lastRes   = {};
-let activeSet = new Set(['stl','cults']);
+let activeSet = new Set(['stl','cults','tv']);
 
 // ── TRADUÇÃO ──
 const DICT = {'dice tower':'torre de dados','dice tray':'bandeja de dados','cable organizer':'organizador de cabos','cable management':'gerenciamento de cabos','cable clip':'clipe de cabo','desk organizer':'organizador de mesa','monitor stand':'suporte de monitor','headphone stand':'suporte de fone','headphone hook':'gancho de fone','phone stand':'suporte de celular','phone holder':'porta celular','tablet stand':'suporte de tablet','pen holder':'porta canetas','wall mount':'suporte de parede','wall shelf':'prateleira de parede','plant pot':'vaso de planta','planter':'vaso','succulent planter':'vaso de suculenta','wall planter':'vaso de parede','herb garden':'horta','flower pot':'vaso de flor','cat toy':'brinquedo de gato','dog toy':'brinquedo de cachorro','pet feeder':'comedouro pet','cat feeder':'comedouro de gato','lamp shade':'cúpula de luminária','night light':'luminária noturna','led diffuser':'difusor de led','neon sign':'letreiro neon','kitchen organizer':'organizador de cozinha','spice rack':'porta temperos','knife holder':'porta facas','bottle opener':'abridor de garrafa','soap dish':'saboneteira','toothbrush holder':'porta escova','keychain':'chaveiro','figurine':'estatueta','bookend':'aparador de livros','coaster':'porta copos','magnetic':'magnético','modular':'modular','articulated':'articulado','holder':'suporte','organizer':'organizador','stand':'suporte','mount':'suporte','rack':'rack','box':'caixa','tray':'bandeja','hook':'gancho','clip':'clipe','hanger':'cabide'};
@@ -627,21 +640,25 @@ async function fetchMLItems(term) {
   const cultsPromise = activeSet.has('cults')
     ? fetchCults(kw).catch(()=>[])
     : Promise.resolve([]);
+  const tvPromise = activeSet.has('tv')
+    ? fetchTV(kw).catch(()=>[])
+    : Promise.resolve([]);
 
   // timeout geral de 10s — mostra o que chegou
   const wrap = (p, fallback) => Promise.race([p, new Promise(r=>setTimeout(()=>r(fallback),10000))]);
 
-  const [stlItems, mlResult, ytItems, cultsItems] = await Promise.all([
+  const [stlItems, mlResult, ytItems, cultsItems, tvItems] = await Promise.all([
     wrap(stlPromise, []),
     wrap(mlPromise,  {items:[], term:kw}),
     wrap(ytPromise,  []),
     wrap(cultsPromise, []),
+    wrap(tvPromise, []),
   ]);
 
   const mlItems = mlResult.items || [];
   const mlTerm  = mlResult.term  || kw;
 
-  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:[], cults:cultsItems };
+  lastRes = { stl:stlItems, ml:mlItems, mlTerm, yt:[], cults:cultsItems, tv:tvItems };
   console.log('Resultados:', { stl:stlItems.length, ml:mlItems.length, mlTerm, yt:ytItems.length, cults:cultsItems.length, csvTotal:csvData.length });
 
   renderAll(kw);
@@ -660,15 +677,16 @@ function renderAll(kw) {
     const b = document.getElementById('expand-'+id); if (b) { b.style.display='none'; b.textContent='Ver mais ↓'; }
   });
 
-  const { stl, ml, mlTerm, yt, cults } = lastRes;
+  const { stl, ml, mlTerm, yt, cults, tv } = lastRes;
 
   // sidebar
   document.getElementById('cnt-stl').textContent = stl.length;
   document.getElementById('cnt-cults').textContent = cults.length;
+  if (document.getElementById('cnt-tv')) document.getElementById('cnt-tv').textContent = tv.length;
 
   // intel
   document.getElementById('intel-kw').textContent = `"${kw}" · ${stl.length + ml.length + yt.length} resultados`;
-  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, yt, mlTerm);
+  document.getElementById('intel-body').innerHTML = buildIntel(kw, stl, ml, tv, cults);
 
   // STLFlix
   renderGrid('grid-stl', stl, 'stl');
@@ -684,6 +702,13 @@ function renderAll(kw) {
   renderGrid('grid-cults', cults, 'cults');
   document.getElementById('meta-cults').textContent = cults.length ? `${cults.length} modelos pagos · Cults3D` : 'sem resultados';
   showExpandBtn('grid-cults', cults.length);
+
+  // Thingiverse
+  if (document.getElementById('grid-tv')) {
+    renderGrid('grid-tv', tv, 'tv');
+    document.getElementById('meta-tv').textContent = tv.length ? `${tv.length} modelos populares · Thingiverse` : 'sem resultados';
+    showExpandBtn('grid-tv', tv.length);
+  }
 }
 
 function showExpandBtn(gridId, count) {
@@ -720,7 +745,116 @@ function renderGrid(id, items, tipo) {
   }).join('');
 }
 
-function buildIntel(kw, stl, ml, yt, mlTerm) {
+// ── FETCH THINGIVERSE para busca ──
+async function fetchTV(kw) {
+  try {
+    const r = await fetch(`/api/thingiverse?q=${encodeURIComponent(kw)}&sort=popular&per_page=20`, {signal: AbortSignal.timeout(10000)});
+    if (!r.ok) throw new Error(`TV ${r.status}`);
+    const d = await r.json();
+    return (d.results || []).map(p => ({
+      nome:      p.nome,
+      num:       p.likes ? `${p.likes.toLocaleString('pt-BR')} likes` : '—',
+      numRaw:    p.likes || 0,
+      imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
+      link:      p.link,
+      drop:      p.autor || '',
+      tipo:      'tv'
+    }));
+  } catch(e) {
+    console.warn('TV erro:', e.message);
+    return [];
+  }
+}
+
+// ── INTEL — análise cruzada real ──
+function buildIntel(kw, stl, ml, tv, cults) {
+  const lines = [];
+
+  // — Volume STLFlix
+  if (stl.length) {
+    const sorted = [...stl].sort((a,b) => b.numRaw - a.numRaw);
+    const top = sorted[0];
+    const total = stl.reduce((s,p) => s + p.numRaw, 0);
+    const avg = Math.round(total / stl.length);
+    const recentes = stl.filter(p => p.data && p.data >= '2025-01').length;
+    lines.push(
+      `<strong>${stl.length} produtos no catálogo STLFlix</strong> — top: <em>"${top.nome}"</em> com <strong>${top.num}</strong>. ` +
+      `Média: <strong>${avg.toLocaleString('pt-BR')} downloads</strong>.` +
+      (recentes > 0 ? ` <strong>${recentes}</strong> publicados em 2025–2026.` : '')
+    );
+  } else {
+    lines.push(`<strong style="color:var(--lime)">Nenhum produto no catálogo STLFlix</strong> para "<strong>${kw}</strong>" — gap de portfólio confirmado.`);
+  }
+
+  // — Cults3D — o que está vendendo fora
+  if (cults.length) {
+    const topCults = [...cults].sort((a,b) => b.numRaw - a.numRaw)[0];
+    const totalCultsDl = cults.reduce((s,p) => s + p.numRaw, 0);
+    const avgCults = Math.round(totalCultsDl / cults.length);
+    lines.push(
+      `Cults3D: <strong>${cults.length} modelos pagos</strong> — mais baixado: <em>"${topCults.nome}"</em> com <strong>${topCults.num} downloads</strong>. ` +
+      `Média: <strong>${avgCults} downloads</strong> · preços entre ${cults.map(p=>p.drop).filter(Boolean).sort()[0]} e ${cults.map(p=>p.drop).filter(Boolean).sort().slice(-1)[0]}.`
+    );
+  }
+
+  // — Thingiverse — demanda gratuita
+  if (tv.length) {
+    const topTV = [...tv].sort((a,b) => b.numRaw - a.numRaw)[0];
+    lines.push(
+      `Thingiverse: <strong>${tv.length} modelos populares</strong> — mais curtido: <em>"${topTV.nome}"</em> com <strong>${topTV.num}</strong>.`
+    );
+  }
+
+  // — Cruzamento e análise real
+  const temSTL = stl.length > 0;
+  const temCults = cults.length > 0;
+  const temTV = tv.length > 0;
+
+  if (temCults && temTV && !temSTL) {
+    const topDl = cults[0]?.numRaw || 0;
+    lines.push(
+      `<strong style="color:var(--lime)">⚡ GAP CONFIRMADO</strong> — "<strong>${kw}</strong>" vende bem no Cults (${topDl} downloads no top) ` +
+      `e tem demanda no Thingiverse, mas <strong>não existe no catálogo STLFlix</strong>. Oportunidade de entrada clara.`
+    );
+  } else if (temSTL && temCults) {
+    const stlTop = stl[0]?.numRaw || 0;
+    const cultsTop = cults[0]?.numRaw || 0;
+    const ratio = cultsTop > 0 ? (stlTop / cultsTop).toFixed(1) : '—';
+    const saturado = stl.length >= 10;
+    if (saturado) {
+      lines.push(
+        `<strong style="color:#f0a030">⚠ Categoria saturada</strong> — <strong>${stl.length} produtos</strong> na STLFlix. ` +
+        `Para entrar, precisa de diferenciação clara: ângulo criativo, tema específico ou mecânica nova.`
+      );
+    } else {
+      lines.push(
+        `Cobertura STLFlix: <strong>${stl.length} produtos</strong> — categoria não saturada. ` +
+        `Top STLFlix tem <strong>${ratio}x</strong> os downloads do top Cults — ` +
+        (parseFloat(ratio) > 1 ? 'STLFlix performa melhor que o mercado.' : 'Cults performa melhor — avaliar diferenciação.')
+      );
+    }
+  } else if (temSTL && !temCults && !temTV) {
+    lines.push(`Categoria presente na STLFlix mas <strong>sem oferta paga no Cults nem no Thingiverse</strong> — demanda pode ser baixa ou nicho muito específico.`);
+  }
+
+  // — Produto mais recente vs mais antigo
+  if (stl.length > 0) {
+    const comData = stl.filter(p => p.data);
+    if (comData.length > 1) {
+      const mais_recente = comData.sort((a,b) => b.data.localeCompare(a.data))[0];
+      const mais_antigo  = comData.sort((a,b) => a.data.localeCompare(b.data))[0];
+      if (mais_recente.data !== mais_antigo.data) {
+        lines.push(
+          `Na STLFlix: mais recente <em>"${mais_recente.nome}"</em> (${mais_recente.data?.substring(0,7)}) · ` +
+          `mais antigo <em>"${mais_antigo.nome}"</em> (${mais_antigo.data?.substring(0,7)}).`
+        );
+      }
+    }
+  }
+
+  return lines.map(l => `<div style="padding:5px 0;border-bottom:0.5px solid var(--lime-bg2);">${l}</div>`).join('');
+}
+
   const lines = [];
   const translated = mlTerm && mlTerm.toLowerCase() !== kw.toLowerCase();
 
@@ -761,31 +895,7 @@ function buildIntel(kw, stl, ml, yt, mlTerm) {
   if (!stl.length && ml.length>0)  opps.push('produto com demanda no ML mas <strong>ausente no catálogo STLFlix</strong> — gap confirmado');
   if (!stl.length && yt.length>0)  opps.push('conteúdo viral no YouTube sem produto STLFlix equivalente');
   if (stl.length>0 && ml.length===0) opps.push('produto no catálogo sem presença no ML — validar demanda BR');
-  if (ml.length>5 && !stl.length)  opps.push(ml.length + ' resultados no ML sugerem volume para um drop');
-  if (opps.length) lines.push('<strong>Oportunidades:</strong> ' + opps.join(' · ') + '.');
-
-  return lines.map(l=>'<div style="padding:4px 0;border-bottom:0.5px solid var(--lime-bg2);">' + l + '</div>').join('');
-}
 // ── EXPORT ──
-function copyMiro() {
-  const {stl,ml,mlTerm,yt} = lastRes;
-  const mlItems = Array.isArray(ml)?ml:(ml.items||[]);
-  let t = `HUB DE PESQUISA STLFLIX — "${lastKw}"\n\n`;
-  if(stl.length){ t+=`STLFLIX\n`; stl.forEach((p,i)=>t+=`${i+1}. ${p.nome} — ${p.num} downloads · ${p.drop}\n`); t+='\n'; }
-  if(mlItems.length){ t+=`MERCADO LIVRE BR${mlTerm&&mlTerm.toLowerCase()!==lastKw.toLowerCase()?` (buscado: "${mlTerm}")`:''}:\n`; mlItems.slice(0,10).forEach((p,i)=>t+=`${i+1}. ${p.nome} — ${p.num}\n`); t+='\n'; }
-  if(yt.length){ t+=`YOUTUBE:\n`; yt.slice(0,8).forEach((p,i)=>t+=`${i+1}. ${p.nome} — ${p.num} views (@${p.drop})\n`); }
-  navigator.clipboard.writeText(t).then(()=>toast('Copiado para área de transferência!'));
-}
-function copyBriefing() {
-  const {stl,ml,yt} = lastRes;
-  const mlItems = Array.isArray(ml)?ml:(ml.items||[]);
-  const gap = !stl.length && mlItems.length > 0;
-  let t = `BRIEFING — "${lastKw}"\nData: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
-  t += gap ? `STATUS: GAP — produto ausente no catálogo STLFlix\n\n` : `STATUS: Produto existe no catálogo (${stl.length} itens)\n\n`;
-  if(mlItems.length) t += `MERCADO LIVRE: ${mlItems[0]?.num} · "${mlItems[0]?.nome}"\n`;
-  if(yt.length) t += `YOUTUBE: ${yt[0]?.num} views · "${yt[0]?.nome}"\n`;
-  navigator.clipboard.writeText(t).then(()=>toast('Briefing copiado!'));
-}
 
 // ── CSV ──
 function openCSV(){ document.getElementById('modal-csv').classList.add('on'); }
