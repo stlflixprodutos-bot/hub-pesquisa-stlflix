@@ -777,11 +777,12 @@ function renderGrid(id, items, tipo) {
 // ── FETCH ETSY (eHunt API) ──
 async function fetchEtsy(kw) {
   try {
-    const r = await fetch(`/api/etsy?q=${encodeURIComponent(kw)}&limit=20&sort=sales`, {signal: AbortSignal.timeout(12000)});
+    const r = await fetch(`/api/etsy?q=${encodeURIComponent(kw)}&limit=20&sort_by=4`, {signal: AbortSignal.timeout(12000)});
     if (!r.ok) throw new Error(`Etsy ${r.status}`);
     const d = await r.json();
+    if (d.error) { console.warn('Etsy API:', d.error, d.code); return []; }
 
-    // renderiza tags se existirem
+    // renderiza tags
     if (d.allTags?.length) {
       const tagsEl = document.getElementById('etsy-tags');
       const wrap = document.getElementById('etsy-tags-wrap');
@@ -796,13 +797,13 @@ async function fetchEtsy(kw) {
 
     return (d.results || []).map(p => ({
       nome:      p.nome,
-      num:       p.vendas ? `${Number(p.vendas).toLocaleString('pt-BR')} vendas` : p.favoritos ? `${Number(p.favoritos).toLocaleString('pt-BR')} favoritos` : '—',
+      num:       p.vendas > 0 ? `${Number(p.vendas).toLocaleString('pt-BR')} vendas` : `${Number(p.favoritos).toLocaleString('pt-BR')} favoritos`,
       numRaw:    p.vendas || p.favoritos || 0,
       imagem_url: p.imagem ? IMG_PROXY(p.imagem) : '',
       link:      p.link,
       drop:      p.preco || '',
       tipo:      'etsy',
-      loja:      p.loja || '',
+      extra:     p.bestsell ? '⭐ Bestseller' : (p.vendas_semana > 0 ? `+${p.vendas_semana}/sem` : ''),
     }));
   } catch(e) {
     console.warn('Etsy erro:', e.message);
