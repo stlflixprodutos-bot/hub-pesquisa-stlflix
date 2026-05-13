@@ -7,7 +7,7 @@ export default async function handler(req) {
   const q = searchParams.get('q') || 'organizer';
   const sort = searchParams.get('sort') || 'popular';
   const per_page = parseInt(searchParams.get('per_page') || '20');
-
+ 
   try {
     const url = `https://api.thingiverse.com/search/${encodeURIComponent(q)}?sort=${sort}&per_page=${per_page}&type=things`;
     const r = await fetch(url, {
