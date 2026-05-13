@@ -15,7 +15,7 @@ export default async function handler(req) {
       },
       signal: AbortSignal.timeout(8000)
     });
-
+ 
     if (!r.ok) throw new Error(`Reddit ${r.status}`);
     const data = await r.json();
 
