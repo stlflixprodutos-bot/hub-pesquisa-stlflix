@@ -318,10 +318,15 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 
 <!-- Explorador de termos — abaixo dos chips -->
 <div id="wc-bar" style="background:var(--s);border-bottom:0.5px solid var(--b);padding:10px 24px;display:none;">
-  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-    <span style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;white-space:nowrap;">TERMOS RELACIONADOS</span>
-    <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;"></div>
-    <div id="wc-bar-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+  <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex:1;min-width:0;">
+      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:var(--lime-d);letter-spacing:.08em;margin-bottom:6px;">🔍 APROFUNDE NO PINTEREST E CULTS — clique num termo para buscar</div>
+      <div id="wc-bar-tags" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+    <div style="flex-shrink:0;">
+      <div style="font-family:var(--mono);font-size:8px;font-weight:700;color:#f472b6;letter-spacing:.08em;margin-bottom:6px;">📌 ABRIR NO PINTEREST</div>
+      <div id="wc-bar-pinterest" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
   </div>
   <div id="wc-bar-insight" style="font-size:10px;color:#8aaa30;margin-top:6px;line-height:1.5;display:none;"></div>
 </div>
@@ -696,9 +701,11 @@ function renderGrid(id, items, tipo) {
     const badge = i===0 ? `<span class="prod-badge">1º</span>` : '';
     const sub = tipo==='stl'
       ? `<div class="prod-drop">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">platform.stlflix.com →</a>`
-      : tipo==='ml'
-      ? `<div class="prod-sub">Mercado Livre BR</div><a class="prod-link" href="${p.link}" target="_blank">mercadolivre.com.br →</a>`
-      : `<div class="prod-sub">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">youtube.com →</a>`;
+      : tipo==='yt'
+      ? `<div class="prod-sub">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">youtube.com →</a>`
+      : tipo==='cults'
+      ? `<div class="prod-sub" style="color:#f472b6;">${p.drop||''}</div><a class="prod-link" style="color:#f472b6;" href="${p.link}" target="_blank">cults3d.com →</a>`
+      : `<div class="prod-sub">${p.drop||''}</div><a class="prod-link" href="${p.link}" target="_blank">${(p.link||'').replace('https://','').split('/')[0]} →</a>`;
     return `<div class="prod-card ${i===0?'top':''}">
       <div class="prod-img">${imgEl}${badge}</div>
       <div class="prod-foot">
