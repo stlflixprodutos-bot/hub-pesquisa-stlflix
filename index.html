@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{ 
+:root{
   --bg:#090909;--s:#111;--s2:#161616;--b:#1e1e1e;--b2:#2a2a2a;
   --t:#e0e0d8;--m:#444;--m2:#777;--m3:#aaa;
   --lime:#c8f135;--lime-bg:#0c1600;--lime-bg2:#172000;--lime-d:#577010;
@@ -311,21 +311,46 @@ textarea.mi{min-height:120px;resize:vertical;font-family:var(--mono);font-size:1
 
     </div>
 
-    <!-- Linha 3: Reddit insights -->
+    <!-- Linha 3: Thingiverse por categoria -->
     <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0500;color:#ff6314;border:0.5px solid #3d1200;">Reddit</span>
-          <span style="font-size:11px;color:var(--m3);">Pedidos e tendências da comunidade 3D</span>
+          <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#001a2a;color:#5bc8f5;border:0.5px solid #0f3a52;">Thingiverse</span>
+          <span style="font-size:11px;color:var(--m3);">Mais populares por categoria — gaps funcionais</span>
         </div>
-        <span style="font-size:10px;color:var(--m);" id="reddit-meta">r/3Dprinting · r/PrintedMinis · r/functionalprint</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <select id="tv-cat" onchange="loadThingiverse()" style="background:var(--s2);border:0.5px solid var(--b2);border-radius:6px;color:var(--t);font-family:var(--sans);font-size:11px;padding:5px 10px;outline:none;cursor:pointer;">
+            <option value="organizer">Organizer</option>
+            <option value="fidget">Fidget</option>
+            <option value="desk organizer">Desk Organizer</option>
+            <option value="lamp shade">Lamp</option>
+            <option value="dice tower">Dice Tower</option>
+            <option value="articulated">Articulated</option>
+            <option value="plant pot">Plant Pot</option>
+            <option value="pet">Pet</option>
+            <option value="keychain">Keychain</option>
+            <option value="miniature">Miniature</option>
+            <option value="cable management">Cable Management</option>
+            <option value="phone stand">Phone Stand</option>
+          </select>
+          <span style="font-size:10px;color:var(--m);font-family:var(--mono);" id="tv-meta">—</span>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--b);" id="reddit-grid">
-        <div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Carregando insights da comunidade...</div>
+      <div id="tv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;padding:12px;">
+        <div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:20px;">Carregando...</div>
       </div>
     </div>
 
-    <!-- Linha 4: Radar YouTube -->
+    <!-- Linha 4: Google Trends — links diretos -->
+    <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+      <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;gap:8px;">
+        <span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:3px 10px;border-radius:3px;background:#1a0f00;color:#fbbc04;border:0.5px solid #3d2800;">Google Trends</span>
+        <span style="font-size:11px;color:var(--m3);">Tendências por categoria — EUA, Europa e Brasil</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;padding:12px;" id="trends-grid"></div>
+    </div>
+
+    <!-- Linha 5: Radar YouTube -->
     <div style="background:var(--s);border:0.5px solid var(--b2);border-radius:10px;margin-bottom:14px;overflow:hidden;">
       <div style="padding:12px 16px;border-bottom:0.5px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -1201,6 +1226,76 @@ function renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, terms, fromYT) 
 }
 
 
+// ── THINGIVERSE ──
+async function loadThingiverse() {
+  const grid = document.getElementById('tv-grid');
+  const meta = document.getElementById('tv-meta');
+  const cat  = document.getElementById('tv-cat')?.value || 'organizer';
+  const stlNames = csvData.map(p => (p.nome||'').toLowerCase());
+
+  grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:16px;">Carregando Thingiverse...</div>';
+
+  try {
+    const r = await fetch(`/api/thingiverse?q=${encodeURIComponent(cat)}&sort=popular&per_page=20`, {signal: AbortSignal.timeout(10000)});
+    const d = await r.json();
+    const items = d.results || [];
+    if (!items.length) { grid.innerHTML = '<div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:16px;">Sem resultados.</div>'; return; }
+    meta.textContent = `${items.length} modelos · likes como proxy de popularidade`;
+    const isGap = nome => {
+      const words = nome.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+      return !words.some(w => stlNames.some(n => n.includes(w)));
+    };
+    grid.innerHTML = items.map((p, i) => `
+      <div class="prod-card${i===0?' top':''}" onclick="window.open('${p.link}','_blank')" style="${isGap(p.nome)?'border-color:#3d2000;':''}" title="${p.nome}">
+        <div class="prod-img" style="position:relative;">
+          ${p.imagem ? `<img src="${IMG_PROXY(p.imagem)}" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="prod-img-ph">${p.nome}</div>`}
+          ${i===0?'<span class="prod-badge">1º</span>':''}
+          ${isGap(p.nome)?'<span style="position:absolute;bottom:4px;left:4px;background:#f0a030;color:#0a0a0a;font-size:7px;font-weight:700;padding:2px 5px;border-radius:3px;">GAP</span>':''}
+        </div>
+        <div class="prod-foot">
+          <div class="prod-name" title="${p.nome}">${p.nome}</div>
+          <div class="prod-num" style="color:#5bc8f5;">${p.likes.toLocaleString('pt-BR')}</div>
+          <div class="prod-sub" style="font-size:7px;">likes · ${p.autor}</div>
+          <a class="prod-link" style="color:#5bc8f5;" href="${p.link}" target="_blank">thingiverse.com →</a>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = `<div style="color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;padding:16px;">Erro: ${e.message}</div>`;
+  }
+}
+
+// ── GOOGLE TRENDS — links diretos por categoria ──
+function renderTrendsLinks() {
+  const el = document.getElementById('trends-grid');
+  if (!el) return;
+  const trends = [
+    { label:'Fidget Toys',       color:'#2dd4bf', terms:['fidget toy','fidget cube','stress toy'],          geo:'US' },
+    { label:'Desk Organizer',    color:'#4a9eff', terms:['desk organizer','desk setup','cable management'], geo:'US' },
+    { label:'3D Printed Toys',   color:'#b08fff', terms:['3d printed toy','articulated toy','flexi toy'],   geo:'US' },
+    { label:'Miniatures RPG',    color:'#818cf8', terms:['miniature painting','dnd miniature','rpg mini'],  geo:'US' },
+    { label:'Lamp Shade',        color:'#f0a030', terms:['lamp shade','led lamp','night light'],            geo:'GB' },
+    { label:'Plant Accessories', color:'#3ddc84', terms:['plant pot','succulent planter','wall planter'],   geo:'GB' },
+    { label:'Pet Accessories',   color:'#f472b6', terms:['cat toy','dog accessory','pet organizer'],        geo:'US' },
+    { label:'Keychain DIY',      color:'#fb923c', terms:['keychain diy','custom keychain','3d keychain'],   geo:'BR' },
+    { label:'Halloween Props',   color:'#7c3aed', terms:['halloween prop','halloween decoration','skull'],   geo:'US' },
+    { label:'Board Game Acc.',   color:'#6366f1', terms:['board game organizer','dice tower','tabletop'],   geo:'US' },
+    { label:'Phone Stand',       color:'#0ea5e9', terms:['phone stand','phone holder','phone mount'],       geo:'BR' },
+    { label:'Cable Management',  color:'#38bdf8', terms:['cable management','cable organizer','desk cable'], geo:'US' },
+  ];
+  el.innerHTML = trends.map(t => {
+    const url = `https://trends.google.com/trends/explore?q=${encodeURIComponent(t.terms.join(','))}&geo=${t.geo}&hl=pt-BR`;
+    return `
+      <a href="${url}" target="_blank" style="display:block;text-decoration:none;padding:10px 14px;background:var(--s2);border-radius:8px;border:0.5px solid var(--b2);transition:border-color .15s;" onmouseover="this.style.borderColor='${t.color}'" onmouseout="this.style.borderColor='var(--b2)'">
+        <div style="font-size:10px;font-weight:500;color:${t.color};margin-bottom:3px;">${t.label}</div>
+        <div style="font-size:9px;color:var(--m);margin-bottom:6px;">${t.terms.slice(0,2).join(' · ')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:8px;font-family:var(--mono);color:var(--m);background:var(--s);padding:2px 6px;border-radius:3px;">${t.geo==='BR'?'🇧🇷 Brasil':t.geo==='GB'?'🇬🇧 Europa':'🇺🇸 EUA'}</span>
+          <span style="font-size:9px;color:${t.color};">Trends →</span>
+        </div>
+      </a>`;
+  }).join('');
+}
+
 function switchTab(name, btn) {
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1222,7 +1317,8 @@ async function runIntelDashboard() {
   renderSeasonality();
   loadCultsAscending();
   runGapAnalysis();
-  loadRedditInsights(period);
+  loadThingiverse();
+  renderTrendsLinks();
 }
 
 // ── SUBCATEGORIAS REAIS STLFLIX ──
@@ -1374,57 +1470,6 @@ async function loadCultsAscending() {
 }
 
 // ── REDDIT INSIGHTS ──
-async function loadRedditInsights(period) {
-  const grid = document.getElementById('reddit-grid');
-  const meta = document.getElementById('reddit-meta');
-  grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Carregando insights da comunidade...</div>';
-
-  const t = period <= 7 ? 'week' : period <= 30 ? 'month' : 'year';
-  const subreddits = ['3Dprinting', 'PrintedMinis', 'functionalprint'];
-  const allPosts = [];
-
-  for (const sub of subreddits) {
-    try {
-      const r = await fetch(`/api/reddit?sub=${sub}&t=${t}&limit=25`, {signal: AbortSignal.timeout(8000)});
-      if (!r.ok) continue;
-      const d = await r.json();
-      allPosts.push(...(d.posts || []).map(p => ({...p,
-        tipo: classifyRedditPost(p.title, p.flair)
-      })));
-    } catch(e) { continue; }
-  }
-
-  if (!allPosts.length) {
-    grid.innerHTML = '<div style="background:var(--s);padding:20px;color:var(--m2);font-size:11px;grid-column:1/-1;text-align:center;">Sem dados do Reddit no momento.</div>';
-    return;
-  }
-
-  const requests  = allPosts.filter(p=>p.tipo==='request').sort((a,b)=>b.score-a.score).slice(0,6);
-  const technique = allPosts.filter(p=>p.tipo==='technique').sort((a,b)=>b.score-a.score).slice(0,6);
-  const trending  = allPosts.sort((a,b)=>b.comments-a.comments).slice(0,6);
-
-  meta.textContent = `r/3Dprinting · r/PrintedMinis · r/functionalprint · ${allPosts.length} posts`;
-
-  const renderCol = (title, color, posts, icon) => `
-    <div style="background:var(--s);padding:14px;">
-      <div style="font-family:var(--mono);font-size:9px;font-weight:700;color:${color};letter-spacing:.08em;margin-bottom:10px;">${icon} ${title}</div>
-      ${posts.length ? posts.map(p=>`
-        <a href="${p.url}" target="_blank" style="display:block;text-decoration:none;margin-bottom:8px;padding:8px 10px;background:var(--s2);border-radius:6px;border:0.5px solid var(--b2);transition:border-color .15s;" onmouseover="this.style.borderColor='${color}'" onmouseout="this.style.borderColor='var(--b2)'">
-          <div style="font-size:10px;color:var(--t);line-height:1.4;margin-bottom:4px;">${p.title.substring(0,80)}${p.title.length>80?'...':''}</div>
-          <div style="display:flex;gap:8px;">
-            <span style="font-size:9px;color:${color};">↑ ${p.score.toLocaleString()}</span>
-            <span style="font-size:9px;color:var(--m);">${p.comments} comentários</span>
-            <span style="font-size:9px;color:var(--m);">r/${p.sub}</span>
-          </div>
-        </a>`).join('') : `<div style="color:var(--m2);font-size:10px;">Sem posts nesta categoria.</div>`}
-    </div>`;
-
-  grid.innerHTML =
-    renderCol('📦 Pedidos de produto', '#f0a030', requests.length ? requests : trending.slice(0,4), '') +
-    renderCol('🔧 Técnicas em alta', '#4a9eff', technique.length ? technique : trending.slice(0,4), '') +
-    renderCol('🔥 Mais engajamento', '#3ddc84', trending, '');
-}
-
 
 function classifyRedditPost(title, flair) {
   const t = title.toLowerCase();
