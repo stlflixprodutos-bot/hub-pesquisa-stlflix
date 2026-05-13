@@ -917,33 +917,19 @@ async function runGapAnalysis() {
     const stlSample = csvData.slice(0,200).map(p=>p.nome).join(', ');
     const cultsSample = items.slice(0,20).map(p=>p.nome).join(', ');
 
-    // análise semântica com Claude API
+    // análise semântica via /api/gap (proxy serverless — sem CORS)
     let gapIndices = [];
     try {
-      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      const aiRes = await fetch('/api/gap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          system: 'Você é um analista de produtos de impressão 3D. Analise duas listas de produtos e identifique quais produtos do Cults3D não têm equivalente conceitual na STLFlix. Considere o conceito, categoria e função do produto, não apenas palavras exatas. Responda APENAS com uma lista de números separados por vírgula (índices 0-based dos produtos do Cults que são gaps reais). Exemplo: 0,2,5,8',
-          messages: [{
-            role: 'user',
-            content: `Produtos STLFlix (amostra): ${stlSample}
-
-Produtos Cults3D (analise estes, índice 0 a ${items.length-1}): ${cultsSample}
-
-Quais índices dos produtos Cults não têm equivalente conceitual na STLFlix?`
-          }]
-        })
+        body: JSON.stringify({ stlSample, cultsSample, cultsCount: items.length })
       });
       if (aiRes.ok) {
         const aiData = await aiRes.json();
-        const text = aiData.content?.[0]?.text || '';
-        gapIndices = text.match(/\d+/g)?.map(Number).filter(n => n < items.length) || [];
+        gapIndices = (aiData.indices || []).filter(n => n < items.length);
       }
     } catch(e) {
-      // fallback: mostra todos como possíveis gaps
       gapIndices = items.map((_,i) => i);
     }
 
