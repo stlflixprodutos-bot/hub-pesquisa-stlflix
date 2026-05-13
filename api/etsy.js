@@ -6,9 +6,9 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q');
   const limit = parseInt(searchParams.get('limit') || '20');
-  const sort = searchParams.get('sort') || 'sales'; // sales, favorites, reviews, price
+  const sort = searchParams.get('sort') || 'sales';
 
-  if (!q) return new Response(JSON.stringify({ results: [] }), {
+  if (!q) return new Response(JSON.stringify({ results: [], _info: 'no query' }), {
     status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
   });
 
@@ -31,37 +31,19 @@ export default async function handler(req) {
       signal: AbortSignal.timeout(10000)
     });
 
-    if (!r.ok) {
-      const text = await r.text();
-      return new Response(JSON.stringify({ results: [], _debug: { status: r.status, body: text.substring(0, 300) } }), {
-        status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
-    }
+    const text = await r.text();
 
-    const d = await r.json();
-    const items = d.data?.items || d.items || d.data || [];
-
-    const results = items.map(item => ({
-      nome:      item.title || item.listing_title || '',
-      vendas:    item.sales_count || item.total_sales || item.sales || 0,
-      favoritos: item.favorites_count || item.num_favorers || item.favorites || 0,
-      reviews:   item.reviews_count || item.num_reviews || item.reviews || 0,
-      preco:     item.price ? `$${parseFloat(item.price).toFixed(2)}` : (item.price_usd ? `$${parseFloat(item.price_usd).toFixed(2)}` : '—'),
-      imagem:    item.image || item.main_image || item.thumbnail || '',
-      link:      item.url || item.listing_url || (item.listing_id ? `https://www.etsy.com/listing/${item.listing_id}` : ''),
-      loja:      item.shop_name || item.store_name || '',
-      tags:      item.tags || [],
-    }));
-
-    // extrai tags únicas para nuvem de palavras
-    const allTags = [...new Set(results.flatMap(r => Array.isArray(r.tags) ? r.tags : []))].slice(0, 30);
-
-    return new Response(JSON.stringify({ results, allTags, total: d.data?.total || results.length }), {
+    // retorna raw para debug — ver estrutura real
+    return new Response(JSON.stringify({
+      _status: r.status,
+      _raw: text.substring(0, 2000)
+    }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, s-maxage=120' }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
+
   } catch(e) {
-    return new Response(JSON.stringify({ results: [], error: e.message }), {
+    return new Response(JSON.stringify({ error: e.message }), {
       status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   }
