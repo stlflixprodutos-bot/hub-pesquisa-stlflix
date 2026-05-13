@@ -1149,7 +1149,7 @@ function renderWordCloudTags(tagsEl, pinterestEl, insightEl, kw, terms, fromEtsy
     const isEtsy = fromEtsy && i < etsyCount;
     const accentColor = isEtsy ? '#f56400' : 'var(--lime)';
     const accentBorder = isEtsy ? '#3d1800' : 'var(--lime-d)';
-    const pinterestUrl = `https://pinterest.com/search/pins/?q=${encodeURIComponent(t + ' 3d print')}`;
+    const pinterestUrl = `https://pinterest.com/search/pins/?q=${encodeURIComponent(t)}`;
     return `<span style="display:inline-flex;align-items:center;gap:0;background:var(--s2);border:0.5px solid var(--b2);border-radius:20px;overflow:hidden;font-size:10px;white-space:nowrap;">
       <span style="padding:4px 8px 4px 10px;color:var(--m3);cursor:pointer;"
         onmouseover="this.style.color='${accentColor}'"
