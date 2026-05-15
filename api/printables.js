@@ -3,12 +3,16 @@ export const config = { runtime: 'edge' };
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') || 'organizer';
-  const limit = parseInt(searchParams.get('limit') || '20');
 
-  // primeiro faz introspection para descobrir o schema real
+  // busca campos que contenham "print" ou "model" no schema
   const introspect = `{
     __schema {
-      queryType { fields { name args { name type { name kind } } } }
+      queryType {
+        fields {
+          name
+          args { name type { name kind ofType { name kind } } }
+        }
+      }
     }
   }`;
 
@@ -26,8 +30,14 @@ export default async function handler(req) {
       signal: AbortSignal.timeout(10000)
     });
 
-    const text = await r.text();
-    return new Response(JSON.stringify({ _status: r.status, _raw: text.substring(0, 4000) }), {
+    const d = await r.json();
+    // filtra apenas campos com "print" ou "model" ou "search" no nome
+    const fields = d?.data?.__schema?.queryType?.fields || [];
+    const relevant = fields.filter(function(f) {
+      return /print|model|search|popular|trend/i.test(f.name);
+    });
+
+    return new Response(JSON.stringify({ relevant, total_fields: fields.length }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
