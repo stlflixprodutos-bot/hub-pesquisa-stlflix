@@ -9,7 +9,7 @@ export default async function handler(req) {
     // Endpoint de busca público do MakerWorld
     const url = `https://makerworld.com/api/v1/search/list?keyword=${encodeURIComponent(q)}&limit=${limit}&offset=0&sort=popularity`;
     
-    const r = await fetch(url, {
+    const r = await fetch(url, { 
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (compatible; research/1.0)',
